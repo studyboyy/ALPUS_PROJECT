@@ -50,6 +50,11 @@ class BerandaPage extends Component
         'rose' => ['boxClass' => 'border-rose-100 bg-linear-to-br from-rose-50 to-pink-50', 'badgeClass' => 'bg-rose-100 text-rose-700'],
     ];
 
+    private const EXECUTION_STATUS_MAP = [
+        'terlaksana' => ['label' => 'Terlaksana', 'badgeClass' => 'bg-emerald-100 text-emerald-700'],
+        'belum_terlaksana' => ['label' => 'Belum Terlaksana', 'badgeClass' => 'bg-rose-100 text-rose-700'],
+    ];
+
     public function mount(): void
     {
         if ($this->tahunDipilih <= 0) {
@@ -436,11 +441,11 @@ class BerandaPage extends Component
     {
         $items = DashboardProgramItem::query()
             ->where('year', $this->tahunDipilih)
-            ->orderBy('sort_order')
+            ->orderBy('sort_order', 'asc')
             ->get();
 
         if ($items->isEmpty()) {
-            $items = DashboardProgramItem::query()->orderByDesc('year')->orderBy('sort_order')->get();
+            $items = DashboardProgramItem::query()->orderByDesc('year')->orderBy('sort_order', 'asc')->get();
         }
 
         return $items
@@ -448,11 +453,19 @@ class BerandaPage extends Component
                 $classes = self::PROGRAM_STYLE_MAP[$item->style_key] ?? self::PROGRAM_STYLE_MAP['blue'];
 
                 return [
+                    'statusKey' => in_array($item->execution_status, ['terlaksana', 'belum_terlaksana'], true) ? $item->execution_status : 'belum_terlaksana',
+                    'detail_url' => route('program-agenda.detail', [
+                        'id' => $item->id,
+                        'slug' => \Illuminate\Support\Str::slug($item->title),
+                    ]),
                     'tipe' => $item->type,
                     'title' => $item->title,
                     'description' => $item->description,
                     'boxClass' => $classes['boxClass'],
                     'badgeClass' => $classes['badgeClass'],
+                    'status_key' => in_array($item->execution_status, ['terlaksana', 'belum_terlaksana'], true) ? $item->execution_status : 'belum_terlaksana',
+                    'status_label' => self::EXECUTION_STATUS_MAP[in_array($item->execution_status, ['terlaksana', 'belum_terlaksana'], true) ? $item->execution_status : 'belum_terlaksana']['label'],
+                    'statusBadgeClass' => self::EXECUTION_STATUS_MAP[in_array($item->execution_status, ['terlaksana', 'belum_terlaksana'], true) ? $item->execution_status : 'belum_terlaksana']['badgeClass'],
                 ];
             })
             ->all();
@@ -510,11 +523,15 @@ class BerandaPage extends Component
                     $classes = self::PROGRAM_STYLE_MAP[$item['style_key']] ?? self::PROGRAM_STYLE_MAP['blue'];
 
                     return [
+                        'detail_url' => '#',
                         'tipe' => $item['type'],
                         'title' => $item['title'],
                         'description' => $item['description'],
                         'boxClass' => $classes['boxClass'],
                         'badgeClass' => $classes['badgeClass'],
+                        'status_key' => in_array(($item['execution_status'] ?? ''), ['terlaksana', 'belum_terlaksana'], true) ? $item['execution_status'] : 'belum_terlaksana',
+                        'status_label' => self::EXECUTION_STATUS_MAP[$item['execution_status'] ?? 'belum_terlaksana']['label'] ?? self::EXECUTION_STATUS_MAP['belum_terlaksana']['label'],
+                        'statusBadgeClass' => self::EXECUTION_STATUS_MAP[$item['execution_status'] ?? 'belum_terlaksana']['badgeClass'] ?? self::EXECUTION_STATUS_MAP['belum_terlaksana']['badgeClass'],
                     ];
                 })
                 ->all();

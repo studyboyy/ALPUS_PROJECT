@@ -162,14 +162,34 @@
 
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <article class="section-box reveal stagger-1 rounded-2xl p-5">
-                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-(--olive)">Statistik Kinerja</p>
-                <h3 class="mt-2 text-lg font-bold">Ringkasan Tahun Berjalan</h3>
-                <p class="mt-2 text-sm text-(--muted)">Mahasiswa aktif, dosen, publikasi, dan status akreditasi.
-                </p>
-                <a href="#statistik" class="mt-4 inline-block text-sm font-semibold text-(--accent)">Lihat Detail
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-(--olive)">Dosen & Penelitian</p>
+                <h3 class="mt-2 text-lg font-bold">Kegiatan dan Luaran</h3>
+                <ul class="mt-3 space-y-2 text-sm text-(--muted)">
+                    <li><span class="font-semibold">Dokumen Profil DTPS</span> (PDF) - ringkasan kualifikasi dan beban
+                        kerja.</li>
+                    <li><span class="font-semibold">Laporan Penelitian & PkM 2025</span> (PDF) - daftar judul dan
+                        pendanaan.</li>
+                    <li><span class="font-semibold">Kumpulan Publikasi Dosen</span> (PDF) - jurnal, prosiding, dan
+                        buku.</li>
+                </ul>
+                <a href="#dokumen" class="mt-4 inline-block text-sm font-semibold text-(--accent)">Lihat Detail
                     -></a>
             </article>
             <article class="section-box reveal stagger-2 rounded-2xl p-5">
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-(--olive)">Prestasi Mahasiswa</p>
+                <h3 class="mt-2 text-lg font-bold">Sorotan Kegiatan</h3>
+                <ul class="mt-3 space-y-2 text-sm text-(--muted)">
+                    <li><span class="font-semibold">Juara 1 Lomba Inovasi</span> - dokumentasi poster dan sertifikat
+                        kejuaraan tingkat nasional.</li>
+                    <li><span class="font-semibold">Program Pengabdian Desa</span> - dokumentasi kegiatan dan dampak
+                        sosial berbasis riset.</li>
+                    <li><span class="font-semibold">Finalis PKM 2025</span> - dokumentasi presentasi dan ringkasan
+                        riset mahasiswa.</li>
+                </ul>
+                <a href="#galeri" class="mt-4 inline-block text-sm font-semibold text-(--accent)">Lihat Detail
+                    -></a>
+            </article>
+            <article class="section-box reveal stagger-3 rounded-2xl p-5">
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-(--olive)">Laporan 2025</p>
                 <h3 class="mt-2 text-lg font-bold">Capaian dan Evaluasi</h3>
                 <p class="mt-2 text-sm text-(--muted)">Sub-bab akademik, penelitian, prestasi, kegiatan eksternal,
@@ -177,20 +197,12 @@
                 <a href="#laporan" class="mt-4 inline-block text-sm font-semibold text-(--accent)">Lihat Detail
                     -></a>
             </article>
-            <article class="section-box reveal stagger-3 rounded-2xl p-5">
-                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-(--olive)">Dosen & Riset</p>
-                <h3 class="mt-2 text-lg font-bold">SDM dan Publikasi</h3>
-                <p class="mt-2 text-sm text-(--muted)">Profil DTPS, kegiatan dosen, pengabdian masyarakat, dan
-                    luaran riset.</p>
-                <a href="#profil" class="mt-4 inline-block text-sm font-semibold text-(--accent)">Lihat Detail
-                    -></a>
-            </article>
             <article class="section-box reveal stagger-4 rounded-2xl p-5">
-                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-(--olive)">Prestasi Mahasiswa</p>
-                <h3 class="mt-2 text-lg font-bold">Pencapaian Kompetitif</h3>
-                <p class="mt-2 text-sm text-(--muted)">Daftar prestasi akademik, non-akademik, dan indikator daya
-                    saing lulusan.</p>
-                <a href="#galeri" class="mt-4 inline-block text-sm font-semibold text-(--accent)">Lihat Detail
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-(--olive)">Statistik Kinerja</p>
+                <h3 class="mt-2 text-lg font-bold">Ringkasan Tahun Berjalan</h3>
+                <p class="mt-2 text-sm text-(--muted)">Mahasiswa aktif, dosen, publikasi, dan status akreditasi.
+                </p>
+                <a href="#statistik" class="mt-4 inline-block text-sm font-semibold text-(--accent)">Lihat Detail
                     -></a>
             </article>
         </section>

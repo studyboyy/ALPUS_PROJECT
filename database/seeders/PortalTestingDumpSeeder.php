@@ -63,18 +63,20 @@ class PortalTestingDumpSeeder extends Seeder
         }
 
         $documentCategories = [
-            'Rencana Strategis (Renstra)',
-            'Rencana Operasional (Renop)',
-            'Standar Mutu Prodi',
-            'Notulen Rapat Evaluasi',
+            'Dosen & Penelitian' => 'Dokumentasi kegiatan dosen, penelitian, dan publikasi tahun ',
+            'Prestasi Mahasiswa' => 'Dokumentasi prestasi dan kegiatan unggulan mahasiswa tahun ',
+            'Rencana Strategis (Renstra)' => 'Dokumen arah pengembangan program studi tahun ',
+            'Rencana Operasional (Renop)' => 'Turunan Renstra untuk target kerja tahun ',
+            'Standar Mutu Prodi' => 'Acuan sistem penjaminan mutu prodi tahun ',
+            'Notulen Rapat Evaluasi' => 'Notulen rapat evaluasi dan tindak lanjut tahun ',
         ];
 
         $docSort = 1;
-        foreach ($documentCategories as $category) {
+        foreach ($documentCategories as $category => $descriptionPrefix) {
             foreach ($years as $year) {
                 DocumentItem::query()->create([
                     'title' => $category . ' Tahun ' . $year,
-                    'description' => 'Dokumen uji kategori ' . $category . ' untuk periode ' . $year . '.',
+                    'description' => $descriptionPrefix . $year . '.',
                     'category' => $category,
                     'category_slug' => DocumentItem::slugFromCategory($category),
                     'file_url' => '/dokumen/pdf/' . DocumentItem::slugFromCategory($category),
@@ -129,6 +131,7 @@ class PortalTestingDumpSeeder extends Seeder
         }
 
         $galleryCategories = [
+            'Prestasi Mahasiswa',
             'Kegiatan Akademik',
             'Kegiatan Mahasiswa',
             'Pengabdian Masyarakat',
@@ -158,12 +161,20 @@ class PortalTestingDumpSeeder extends Seeder
             ],
             'quick_highlights' => [
                 [
-                    'title' => 'Dashboard Statistik 2019-2028',
-                    'description' => 'Ringkasan data KPI, tren, dan capaian untuk sepuluh tahun pengujian.',
-                    'link' => '#statistik-beranda',
-                    'link_label' => 'Buka Statistik',
-                    'icon_key' => 'chart',
-                    'color_key' => 'blue',
+                    'title' => 'Dosen & Penelitian',
+                    'description' => 'Dokumen DTPS, penelitian, dan publikasi dosen per tahun.',
+                    'link' => '/dokumen/kategori/dosen-penelitian',
+                    'link_label' => 'Lihat Dokumen',
+                    'icon_key' => 'users',
+                    'color_key' => 'emerald',
+                ],
+                [
+                    'title' => 'Prestasi Mahasiswa',
+                    'description' => 'Dokumentasi prestasi, kompetisi, dan kegiatan unggulan mahasiswa.',
+                    'link' => '/galeri/kategori/prestasi-mahasiswa',
+                    'link_label' => 'Lihat Galeri',
+                    'icon_key' => 'award',
+                    'color_key' => 'amber',
                 ],
                 [
                     'title' => 'Laporan Tahunan Lengkap',
@@ -174,20 +185,12 @@ class PortalTestingDumpSeeder extends Seeder
                     'color_key' => 'violet',
                 ],
                 [
-                    'title' => 'Profil & SDM Prodi',
-                    'description' => 'Profil Program Studi, struktur organisasi, dan pengembangan SDM.',
-                    'link' => '/profil',
-                    'link_label' => 'Lihat Profil',
-                    'icon_key' => 'users',
-                    'color_key' => 'emerald',
-                ],
-                [
-                    'title' => 'Galeri 24 Foto Uji',
-                    'description' => 'Empat kategori galeri dengan enam foto untuk masing-masing kategori.',
-                    'link' => '/galeri',
-                    'link_label' => 'Lihat Galeri',
-                    'icon_key' => 'award',
-                    'color_key' => 'amber',
+                    'title' => 'Dashboard Statistik 2019-2028',
+                    'description' => 'Ringkasan data KPI, tren, dan capaian untuk sepuluh tahun pengujian.',
+                    'link' => '/statistik',
+                    'link_label' => 'Buka Statistik',
+                    'icon_key' => 'chart',
+                    'color_key' => 'blue',
                 ],
             ],
             'header_logo_url' => '',

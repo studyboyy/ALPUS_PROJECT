@@ -107,6 +107,11 @@
                 $colors = $quickColorMap[data_get($highlight, 'color_key', 'blue')] ?? $quickColorMap['blue'];
                 $iconPath = $quickIconMap[data_get($highlight, 'icon_key', 'chart')] ?? $quickIconMap['chart'];
                 $link = data_get($highlight, 'link', '#');
+
+                // Direct link to gallery for Prestasi Mahasiswa
+                if (data_get($highlight, 'title') === 'Prestasi Mahasiswa') {
+                    $link = route('galeri.category', ['kategori' => 'prestasi-mahasiswa']);
+                }
             @endphp
             <article
                 class="section-box group rounded-2xl border-t-4 {{ $colors['border'] }} p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
@@ -123,33 +128,6 @@
                     class="mt-4 inline-block rounded-full {{ $colors['linkBg'] }} px-3 py-1 text-xs font-semibold {{ $colors['linkText'] }} transition {{ $colors['linkHover'] }}">{{ data_get($highlight, 'link_label', 'Lihat Detail') }}</a>
             </article>
         @endforeach
-    </section>
-
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <p class="text-3xl font-bold display-font md:col-span-2 xl:col-span-4">Profil Program Studi</p>
-        @if (!empty($profileSections))
-            @foreach ($profileSections as $section)
-                @php
-                    $colors = \App\Models\ProfileSection::getColorClasses($section['color_class'] ?? 'blue');
-                    $icon = \App\Models\ProfileSection::getIconPath($section['icon_key'] ?? 'book');
-                @endphp
-                <article
-                    class="section-box group rounded-2xl border-t-4 {{ $colors['top-border'] }} p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl">
-                    <div
-                        class="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br {{ $colors['bg'] }} shadow-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            {!! $icon !!}
-                        </svg>
-                    </div>
-                    <h3 class="mt-3 text-lg font-bold">{{ $section['title'] }}</h3>
-                    <p class="mt-2 text-sm text-(--muted)">{{ Str::limit($section['summary'], 60, '...') }}</p>
-                    <a wire:navigate.hover href="{{ route('profil.detail', ['slug' => $section['slug']]) }}"
-                        class="mt-4 inline-block rounded-full {{ $colors['bg-light'] }} px-3 py-1 text-xs font-semibold {{ $colors['text'] }} transition group-hover:bg-opacity-100">Lihat
-                        Lebih Lengkap</a>
-                </article>
-            @endforeach
-        @endif
     </section>
 
     <section id="statistik-beranda" class="grid gap-4 lg:grid-cols-2 scroll-mt-28">
@@ -224,8 +202,8 @@
                             fill="#64748b">{{ data_get($tick, 'label') }}</text>
                     @endforeach
 
-                    <polyline class="js-trend-line" points="{{ $statistikAktif['trend']['mahasiswa'] }}"
-                        fill="none" stroke="#1d4ed8" stroke-width="4" />
+                    <polyline class="js-trend-line" points="{{ $statistikAktif['trend']['mahasiswa'] }}" fill="none"
+                        stroke="#1d4ed8" stroke-width="4" />
                     <polyline class="js-trend-line" points="{{ $statistikAktif['trend']['ipk'] }}" fill="none"
                         stroke="#0f766e" stroke-width="4" />
                     <polyline class="js-trend-line" points="{{ $statistikAktif['trend']['publikasi'] }}"
@@ -291,12 +269,19 @@
             </div>
             <div class="grid gap-3 md:grid-cols-2">
                 @foreach ($programPreviewItems as $item)
-                    <div class="rounded-xl border p-4 {{ $item['boxClass'] }}">
-                        <span
-                            class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] {{ $item['badgeClass'] }}">{{ $item['tipe'] }}</span>
+                    <a wire:navigate.hover href="{{ $item['detail_url'] }}"
+                        class="block rounded-xl border p-4 transition hover:opacity-95 {{ $item['boxClass'] }}">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span
+                                class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] {{ $item['badgeClass'] }}">{{ $item['tipe'] }}</span>
+                            <span
+                                class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold {{ $item['statusBadgeClass'] }}">{{ $item['status_label'] }}</span>
+                        </div>
                         <h4 class="mt-2 font-semibold">{{ $item['title'] }}</h4>
-                        <p class="mt-1 text-sm text-(--muted)">{{ $item['description'] }}</p>
-                    </div>
+                        <p class="mt-1 text-sm text-(--muted)">
+                            {{ \Illuminate\Support\Str::limit($item['description'], 95, '...') }}</p>
+                        <p class="mt-2 text-xs font-semibold text-indigo-700">Lihat detail lengkap</p>
+                    </a>
                 @endforeach
             </div>
             @if ($programSisaItems->isNotEmpty())
@@ -305,12 +290,19 @@
                         'max-height:0px;opacity:0;transform:translateY(-8px);'">
                     <div class="grid gap-3 pb-2 md:grid-cols-2">
                         @foreach ($programSisaItems as $item)
-                            <div class="rounded-xl border p-4 {{ $item['boxClass'] }}">
-                                <span
-                                    class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] {{ $item['badgeClass'] }}">{{ $item['tipe'] }}</span>
+                            <a wire:navigate.hover href="{{ $item['detail_url'] }}"
+                                class="block rounded-xl border p-4 transition hover:opacity-95 {{ $item['boxClass'] }}">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span
+                                        class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] {{ $item['badgeClass'] }}">{{ $item['tipe'] }}</span>
+                                    <span
+                                        class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold {{ $item['statusBadgeClass'] }}">{{ $item['status_label'] }}</span>
+                                </div>
                                 <h4 class="mt-2 font-semibold">{{ $item['title'] }}</h4>
-                                <p class="mt-1 text-sm text-(--muted)">{{ $item['description'] }}</p>
-                            </div>
+                                <p class="mt-1 text-sm text-(--muted)">
+                                    {{ \Illuminate\Support\Str::limit($item['description'], 95, '...') }}</p>
+                                <p class="mt-2 text-xs font-semibold text-indigo-700">Lihat detail lengkap</p>
+                            </a>
                         @endforeach
                     </div>
                 </div>
@@ -329,6 +321,7 @@
                     </button>
                 </div>
             @endif
+
         </article>
 
         <article class="section-box rounded-2xl p-6">

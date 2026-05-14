@@ -18,11 +18,16 @@ class AdminFeedbackPage extends Component
         ]);
     }
 
+    public function hapusFeedback(int $id): void
+    {
+        ContactFeedback::query()->whereKey($id)->delete();
+    }
+
     public function render()
     {
         return view('livewire.pages.admin-feedback-page', [
             'feedbackItems' => ContactFeedback::query()->latest()->get(),
-            'belumDibaca' => ContactFeedback::query()->whereNull('read_at')->count(),
+            'belumDibaca' => (int) ContactFeedback::query()->whereNull('read_at')->count(),
         ]);
     }
 }

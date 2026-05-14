@@ -13,6 +13,7 @@ class DashboardProgramItem extends Model
         'title',
         'description',
         'style_key',
+        'execution_status',
         'sort_order',
     ];
 
@@ -21,15 +22,22 @@ class DashboardProgramItem extends Model
         'sort_order' => 'integer',
     ];
 
+    public static function hasExecutionStatusColumn(): bool
+    {
+        return Schema::hasTable('dashboard_program_items')
+            && Schema::hasColumn('dashboard_program_items', 'execution_status');
+    }
+
     public static function defaults(int $year = 2025): array
     {
-        return [
+        $defaults = [
             [
                 'year' => $year,
                 'type' => 'Program',
                 'title' => 'Kelas Kolaboratif Industri',
                 'description' => 'Perluasan project-based learning bersama mitra strategis nasional.',
                 'style_key' => 'blue',
+                'execution_status' => 'terlaksana',
                 'sort_order' => 1,
             ],
             [
@@ -38,6 +46,7 @@ class DashboardProgramItem extends Model
                 'title' => 'Pusat Riset Mahasiswa',
                 'description' => 'Skema pembinaan riset dan publikasi mahasiswa tingkat akhir.',
                 'style_key' => 'violet',
+                'execution_status' => 'terlaksana',
                 'sort_order' => 2,
             ],
             [
@@ -46,6 +55,7 @@ class DashboardProgramItem extends Model
                 'title' => 'Forum Evaluasi Semester',
                 'description' => 'Agenda tahunan ' . $year . ' untuk audit capaian indikator dan tindak lanjut mutu.',
                 'style_key' => 'amber',
+                'execution_status' => 'terlaksana',
                 'sort_order' => 3,
             ],
             [
@@ -54,9 +64,22 @@ class DashboardProgramItem extends Model
                 'title' => 'Seminar Internasional Prodi',
                 'description' => 'Agenda strategis tahun ' . $year . ' untuk kolaborasi riset dosen dan mahasiswa.',
                 'style_key' => 'rose',
+                'execution_status' => 'belum_terlaksana',
                 'sort_order' => 4,
             ],
         ];
+
+        if (!static::hasExecutionStatusColumn()) {
+            return collect($defaults)
+                ->map(function (array $item): array {
+                    unset($item['execution_status']);
+
+                    return $item;
+                })
+                ->all();
+        }
+
+        return $defaults;
     }
 
     public static function ensureDefaults(): void

@@ -68,6 +68,7 @@ class AdminBerandaContentPage extends Component
         $this->galleryItems[] = [
             'title' => 'Foto Kegiatan Baru',
             'category' => 'Kegiatan Akademik',
+            'custom_category' => '',
             'category_slug' => HomePageSetting::slugFromCategory('Kegiatan Akademik'),
             'image_url' => '',
         ];
@@ -90,6 +91,30 @@ class AdminBerandaContentPage extends Component
             'link_label' => 'Lihat Detail',
             'icon_key' => 'chart',
             'color_key' => 'blue',
+        ];
+    }
+
+    public function pindahQuickHighlightKeAtas(int $index): void
+    {
+        if ($index <= 0 || !isset($this->quickHighlights[$index], $this->quickHighlights[$index - 1])) {
+            return;
+        }
+
+        [$this->quickHighlights[$index - 1], $this->quickHighlights[$index]] = [
+            $this->quickHighlights[$index],
+            $this->quickHighlights[$index - 1],
+        ];
+    }
+
+    public function pindahQuickHighlightKeBawah(int $index): void
+    {
+        if (!isset($this->quickHighlights[$index], $this->quickHighlights[$index + 1])) {
+            return;
+        }
+
+        [$this->quickHighlights[$index], $this->quickHighlights[$index + 1]] = [
+            $this->quickHighlights[$index + 1],
+            $this->quickHighlights[$index],
         ];
     }
 
@@ -297,6 +322,34 @@ class AdminBerandaContentPage extends Component
 
     public function simpanGaleri(): void
     {
+        foreach ($this->galleryItems as $index => $item) {
+            if ((string) data_get($item, 'category') !== '__new__') {
+                continue;
+            }
+
+            if (trim((string) data_get($item, 'custom_category', '')) === '') {
+                $this->addError("galleryItems.$index.custom_category", 'Isi nama kategori baru terlebih dahulu.');
+            }
+        }
+
+        if ($this->getErrorBag()->isNotEmpty()) {
+            return;
+        }
+
+        $this->galleryItems = collect($this->galleryItems)
+            ->map(function (array $item): array {
+                $selectedCategory = trim((string) data_get($item, 'category', ''));
+                $customCategory = trim((string) data_get($item, 'custom_category', ''));
+
+                if ($selectedCategory === '__new__') {
+                    $item['category'] = $customCategory !== '' ? $customCategory : 'Kegiatan Akademik';
+                }
+
+                return $item;
+            })
+            ->values()
+            ->all();
+
         $this->validate([
             'galleryItems' => ['required', 'array', 'min:1'],
             'galleryItems.*.title' => ['required', 'string', 'max:120'],
@@ -360,7 +413,16 @@ class AdminBerandaContentPage extends Component
         $this->kaprodiQuote = $settings['kaprodi_quote'];
         $this->kaprodiPhotoUrl = $settings['kaprodi_photo_url'];
         $this->quickHighlights = $settings['quick_highlights'];
-        $this->galleryItems = $settings['gallery_items'];
+        $this->galleryItems = collect($settings['gallery_items'] ?? [])
+            ->map(fn($item) => [
+                'title' => (string) data_get($item, 'title', 'Foto Kegiatan'),
+                'category' => (string) data_get($item, 'category', 'Kegiatan Akademik'),
+                'custom_category' => '',
+                'category_slug' => (string) data_get($item, 'category_slug', HomePageSetting::slugFromCategory((string) data_get($item, 'category', 'Kegiatan Akademik'))),
+                'image_url' => (string) data_get($item, 'image_url', ''),
+            ])
+            ->values()
+            ->all();
 
         if (count($this->contactSocialLinks) === 0) {
             $this->contactSocialLinks = HomePageSetting::defaults()['contact_social_links'];

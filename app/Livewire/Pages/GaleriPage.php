@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages;
 
+use App\Config\GalleryCategories;
 use App\Models\HomePageSetting;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -27,6 +28,19 @@ class GaleriPage extends Component
 
         if ($matched) {
             $this->kategoriDipilih = (string) data_get($matched, 'category');
+            return;
+        }
+
+        $baseCategories = [
+            'prestasi-mahasiswa' => 'Prestasi Mahasiswa',
+            'kegiatan-akademik' => 'Kegiatan Akademik',
+            'kegiatan-mahasiswa' => 'Kegiatan Mahasiswa',
+            'pengabdian-masyarakat' => 'Pengabdian Masyarakat',
+            'kerjasama-mou' => 'Kerjasama & MoU',
+        ];
+
+        if (isset($baseCategories[$kategori])) {
+            $this->kategoriDipilih = $baseCategories[$kategori];
         }
     }
 
@@ -41,9 +55,8 @@ class GaleriPage extends Component
             ->reverse()
             ->values();
 
-        $kategoriList = $galleryItems
-            ->pluck('category')
-            ->filter()
+        $kategoriList = collect(GalleryCategories::all())
+            ->merge($galleryItems->pluck('category')->filter())
             ->unique()
             ->values()
             ->all();

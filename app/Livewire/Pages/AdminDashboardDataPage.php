@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Pages;
 
-use App\Models\DashboardMonthlyStat;
 use App\Models\DashboardProgramItem;
 use App\Models\DashboardYearStat;
 use Livewire\Attributes\Layout;
@@ -15,7 +14,6 @@ class AdminDashboardDataPage extends Component
 {
     public int $tahunDipilih = 0;
     public ?int $tahunBaru = null;
-    public array $bulanan = [];
 
     public array $statistik = [
         'mahasiswa_aktif' => 0,
@@ -46,17 +44,13 @@ class AdminDashboardDataPage extends Component
             $this->tahunDipilih = (int) $tahunTerbaru;
         }
 
-        $this->ensureBulananYear();
         $this->loadStatistikForm();
-        $this->loadBulananForm();
     }
 
     public function pilihTahun(int $tahun): void
     {
         $this->tahunDipilih = $tahun;
-        $this->ensureBulananYear();
         $this->loadStatistikForm();
-        $this->loadBulananForm();
     }
 
     public function tambahTahun(): void
@@ -91,16 +85,14 @@ class AdminDashboardDataPage extends Component
 
         $this->tahunDipilih = (int) $this->tahunBaru;
         $this->tahunBaru = null;
-        $this->ensureBulananYear();
         $this->loadStatistikForm();
-        $this->loadBulananForm();
 
         $this->flashStatus('Tahun statistik baru berhasil ditambahkan.');
     }
 
     public function hapusTahun(int $tahun): void
     {
-        $jumlahTahun = DashboardYearStat::query()->count();
+        $jumlahTahun = DashboardYearStat::query()->count('id');
         if ($jumlahTahun <= 1) {
             $this->flashStatus('Minimal satu tahun statistik harus tetap tersedia.');
             return;
@@ -110,9 +102,7 @@ class AdminDashboardDataPage extends Component
 
         $tahunTerbaru = DashboardYearStat::query()->max('year');
         $this->tahunDipilih = is_numeric($tahunTerbaru) ? (int) $tahunTerbaru : $this->tahunDipilih;
-        $this->ensureBulananYear();
         $this->loadStatistikForm();
-        $this->loadBulananForm();
 
         $this->flashStatus('Tahun statistik berhasil dihapus.');
     }
@@ -155,47 +145,16 @@ class AdminDashboardDataPage extends Component
         );
 
         $this->rebuildTrendFromKpi();
-        $this->ensureBulananYear();
         $this->loadStatistikForm();
 
         $this->flashStatus('Data statistik tahun ' . $this->tahunDipilih . ' berhasil disimpan.');
     }
 
-    public function simpanBulanan(): void
-    {
-        foreach ($this->bulanan as $index => $row) {
-            $this->validate([
-                "bulanan.$index.month" => ['required', 'integer', 'between:1,12'],
-                "bulanan.$index.mahasiswa_aktif" => ['required', 'numeric', 'min:0'],
-                "bulanan.$index.ipk" => ['required', 'numeric', 'between:0,4'],
-                "bulanan.$index.dosen_tetap" => ['required', 'numeric', 'min:0'],
-                "bulanan.$index.publikasi" => ['required', 'numeric', 'min:0'],
-            ]);
-
-            DashboardMonthlyStat::query()->updateOrCreate(
-                [
-                    'year' => $this->tahunDipilih,
-                    'month' => (int) data_get($row, 'month'),
-                ],
-                [
-                    'kpi' => [
-                        'mahasiswa_aktif' => (float) data_get($row, 'mahasiswa_aktif', 0),
-                        'ipk' => (float) data_get($row, 'ipk', 0),
-                        'dosen_tetap' => (float) data_get($row, 'dosen_tetap', 0),
-                        'publikasi' => (float) data_get($row, 'publikasi', 0),
-                    ],
-                ]
-            );
-        }
-
-        $this->loadBulananForm();
-        $this->flashStatus('Statistik bulanan tahun ' . $this->tahunDipilih . ' berhasil disimpan.');
-    }
 
     private function rebuildTrendFromKpi(): void
     {
         $allStats = DashboardYearStat::query()
-            ->orderBy('year')
+            ->orderBy('year', 'asc')
             ->get(['id', 'year', 'kpi', 'trend']);
 
         foreach ($allStats as $index => $stat) {
@@ -297,45 +256,7 @@ class AdminDashboardDataPage extends Component
         ];
     }
 
-    private function ensureBulananYear(): void
-    {
-        $annualKpi = DashboardYearStat::query()->where('year', $this->tahunDipilih)->value('kpi');
-        DashboardMonthlyStat::ensureYear($this->tahunDipilih, is_array($annualKpi) ? $annualKpi : []);
-    }
 
-    private function loadBulananForm(): void
-    {
-        $rows = DashboardMonthlyStat::query()
-            ->where('year', $this->tahunDipilih)
-            ->orderBy('month')
-            ->get();
-
-        if ($rows->isEmpty()) {
-            $this->bulanan = collect(range(1, 12))
-                ->map(fn(int $month) => [
-                    'month' => $month,
-                    'month_label' => DashboardMonthlyStat::monthName($month),
-                    'mahasiswa_aktif' => 0,
-                    'ipk' => 0,
-                    'dosen_tetap' => 0,
-                    'publikasi' => 0,
-                ])
-                ->all();
-
-            return;
-        }
-
-        $this->bulanan = $rows
-            ->map(fn(DashboardMonthlyStat $row) => [
-                'month' => (int) $row->month,
-                'month_label' => DashboardMonthlyStat::monthName((int) $row->month),
-                'mahasiswa_aktif' => (float) data_get($row->kpi, 'mahasiswa_aktif', 0),
-                'ipk' => (float) data_get($row->kpi, 'ipk', 0),
-                'dosen_tetap' => (float) data_get($row->kpi, 'dosen_tetap', 0),
-                'publikasi' => (float) data_get($row->kpi, 'publikasi', 0),
-            ])
-            ->all();
-    }
 
     private function flashStatus(string $message): void
     {
@@ -347,7 +268,7 @@ class AdminDashboardDataPage extends Component
     {
         return view('livewire.pages.admin-dashboard-data-page', [
             'daftarTahun' => DashboardYearStat::query()->orderByDesc('year')->pluck('year')->all(),
-            'programItems' => DashboardProgramItem::query()->orderBy('sort_order')->get(['id'])->all(),
+            'programItems' => DashboardProgramItem::query()->orderBy('sort_order', 'asc')->get(['id'])->all(),
             'bulanSekarang' => (int) now()->format('n'),
         ]);
     }

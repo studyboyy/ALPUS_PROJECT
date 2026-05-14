@@ -91,17 +91,26 @@ class PortalFinalTestingSeeder extends Seeder
             }
         }
 
-        foreach ($years as $year) {
-            $kategori = 'Dokumen Tahunan';
-            DocumentItem::query()->create([
-                'title' => 'Dokumen Tahunan ' . $year,
-                'description' => 'Dokumen default final testing untuk tahun ' . $year . '.',
-                'category' => $kategori,
-                'category_slug' => DocumentItem::slugFromCategory($kategori),
-                'file_url' => '/dokumen/pdf/' . DocumentItem::slugFromCategory($kategori),
-                'file_name' => 'Dokumen-Tahunan-' . $year . '.pdf',
-                'sort_order' => $year - 2018,
-            ]);
+        $documentCategories = [
+            'Dosen & Penelitian' => 'Dokumen DTPS, penelitian, dan publikasi tahun ',
+            'Prestasi Mahasiswa' => 'Dokumentasi prestasi dan kegiatan unggulan mahasiswa tahun ',
+            'Dokumen Tahunan' => 'Dokumen default final testing untuk tahun ',
+        ];
+
+        $docSort = 1;
+        foreach ($documentCategories as $kategori => $descriptionPrefix) {
+            foreach ($years as $year) {
+                DocumentItem::query()->create([
+                    'title' => $kategori . ' ' . $year,
+                    'description' => $descriptionPrefix . $year . '.',
+                    'category' => $kategori,
+                    'category_slug' => DocumentItem::slugFromCategory($kategori),
+                    'file_url' => '/dokumen/pdf/' . DocumentItem::slugFromCategory($kategori),
+                    'file_name' => 'Dokumen-' . $year . '-' . $docSort . '.pdf',
+                    'sort_order' => $docSort,
+                ]);
+                $docSort++;
+            }
         }
 
         foreach (ProfileSection::defaults() as $section) {
@@ -109,7 +118,7 @@ class PortalFinalTestingSeeder extends Seeder
         }
 
         $galleryItems = [];
-        $categories = ['Kegiatan Akademik', 'Kegiatan Mahasiswa', 'Pengabdian Masyarakat', 'Kerjasama & MoU'];
+        $categories = ['Prestasi Mahasiswa', 'Kegiatan Akademik', 'Kegiatan Mahasiswa', 'Pengabdian Masyarakat', 'Kerjasama & MoU'];
         $seed = 300;
         foreach ($categories as $category) {
             for ($i = 1; $i <= 5; $i++) {

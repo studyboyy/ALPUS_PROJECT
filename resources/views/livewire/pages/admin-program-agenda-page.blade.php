@@ -17,6 +17,13 @@
                 {{ collect($programItems ?? [])->where('type', 'Agenda')->count() }}</p>
             <p class="mt-1 text-xs text-slate-500">Item bertipe agenda</p>
         </article>
+        <article class="section-box rounded-2xl border-t-4 border-lime-500 p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Agenda Terlaksana</p>
+            <p class="mt-2 text-3xl font-extrabold text-lime-700">
+                {{ collect($programItems ?? [])->where('type', 'Agenda')->where('execution_status', 'terlaksana')->count() }}
+            </p>
+            <p class="mt-1 text-xs text-slate-500">Status agenda sudah terlaksana</p>
+        </article>
     </section>
 
     <section class="section-box rounded-3xl p-6 md:p-8">
@@ -45,10 +52,26 @@
     </section>
 
     <section class="section-box rounded-3xl p-6 md:p-8">
+        <div class="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-700">
+            💡 Gunakan tombol <strong>↑ Naik</strong> dan <strong>↓ Turun</strong> untuk mengatur urutan item. Urutan
+            akan disimpan otomatis saat Anda klik tombol.
+        </div>
         <form wire:submit="simpanProgram" class="space-y-4">
             @foreach ($programItems as $index => $item)
                 <div class="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
-                    <div class="md:col-span-2 flex justify-end">
+                    <div class="md:col-span-2 flex justify-between gap-2">
+                        <div class="flex gap-2">
+                            @if ($index > 0)
+                                <button type="button" wire:click="naikItem({{ $index }})"
+                                    class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">↑
+                                    Naik</button>
+                            @endif
+                            @if ($index < count($programItems) - 1)
+                                <button type="button" wire:click="turunItem({{ $index }})"
+                                    class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">↓
+                                    Turun</button>
+                            @endif
+                        </div>
                         <button type="button" wire:click="hapusAgenda({{ $index }})"
                             class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">Hapus
                             Item</button>
@@ -65,13 +88,22 @@
                             @endforeach
                         </select>
                     </label>
+                    <label class="text-sm">Status Pelaksanaan
+                        <select wire:model.defer="programItems.{{ $index }}.execution_status"
+                            class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                            <option value="terlaksana">Terlaksana</option>
+                            <option value="belum_terlaksana">Belum Terlaksana</option>
+                        </select>
+                    </label>
                     <label class="text-sm md:col-span-2">Judul
                         <input wire:model.defer="programItems.{{ $index }}.title" type="text"
                             class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                     </label>
                     <label class="text-sm md:col-span-2">Deskripsi
-                        <textarea wire:model.defer="programItems.{{ $index }}.description" rows="3"
+                        <textarea wire:model.defer="programItems.{{ $index }}.description" rows="6"
                             class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
+                        <p class="mt-1 text-xs text-slate-500">Bisa diisi deskripsi yang lebih panjang untuk detail
+                            program/agenda.</p>
                     </label>
                 </div>
             @endforeach

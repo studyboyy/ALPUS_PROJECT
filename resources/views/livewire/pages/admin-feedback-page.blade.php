@@ -22,15 +22,20 @@
                             <p class="text-xs text-slate-500">{{ $item->name }} · {{ $item->email }} ·
                                 {{ $item->created_at?->format('d M Y H:i') }}</p>
                         </div>
-                        @if (!$item->read_at)
-                            <button type="button" wire:click="tandaiDibaca({{ $item->id }})"
-                                class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">Tandai
-                                dibaca</button>
-                        @else
-                            <span
-                                class="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">Sudah
-                                dibaca</span>
-                        @endif
+                        <div class="flex gap-2">
+                            @if (!$item->read_at)
+                                <button type="button" wire:click="tandaiDibaca({{ $item->id }})"
+                                    class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">Tandai
+                                    dibaca</button>
+                            @else
+                                <span
+                                    class="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">Sudah
+                                    dibaca</span>
+                            @endif
+                            <button type="button" wire:click="hapusFeedback({{ $item->id }})"
+                                wire:confirm="Apakah Anda yakin ingin menghapus umpan balik ini?"
+                                class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">Hapus</button>
+                        </div>
                     </div>
                     <p class="mt-3 text-sm leading-relaxed text-slate-700">{{ $item->message }}</p>
                 </article>

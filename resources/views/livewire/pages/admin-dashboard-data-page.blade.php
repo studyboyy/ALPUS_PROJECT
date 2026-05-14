@@ -110,62 +110,17 @@
             <div>
                 <h3 class="text-lg font-bold">Statistik Kinerja Tahunan Berjalan (Bulanan)</h3>
                 <p class="mt-1 text-xs text-(--muted)">Data YTD dihitung otomatis dari input bulan Jan-Des untuk tahun
-                    {{ $tahunDipilih }}.</p>
+                    {{ $tahunDipilih }}. Untuk mengelola data bulanan, buka halaman khusus Bulanan Statistik.</p>
             </div>
             <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">Bulan aktif sistem:
                 {{ $bulanSekarang }}</span>
         </div>
 
-        <form wire:submit="simpanBulanan" class="mt-4 space-y-4">
-            <div class="overflow-x-auto rounded-2xl border border-(--line)">
-                <table class="min-w-full divide-y divide-(--line) text-sm">
-                    <thead class="bg-slate-50 text-xs uppercase tracking-[0.12em] text-slate-500">
-                        <tr>
-                            <th class="px-3 py-2 text-left">Bulan</th>
-                            <th class="px-3 py-2 text-left">Mahasiswa Aktif</th>
-                            <th class="px-3 py-2 text-left">IPK</th>
-                            <th class="px-3 py-2 text-left">Dosen Tetap</th>
-                            <th class="px-3 py-2 text-left">Publikasi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-(--line) bg-white">
-                        @foreach ($bulanan as $idx => $row)
-                            <tr>
-                                <td class="px-3 py-2">
-                                    <span
-                                        class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{{ data_get($row, 'month_label') }}</span>
-                                    <input type="hidden" wire:model.defer="bulanan.{{ $idx }}.month" />
-                                </td>
-                                <td class="px-3 py-2">
-                                    <input wire:model.defer="bulanan.{{ $idx }}.mahasiswa_aktif"
-                                        type="number" step="1" min="0"
-                                        class="w-36 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                                </td>
-                                <td class="px-3 py-2">
-                                    <input wire:model.defer="bulanan.{{ $idx }}.ipk" type="number"
-                                        step="0.01" min="0" max="4"
-                                        class="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                                </td>
-                                <td class="px-3 py-2">
-                                    <input wire:model.defer="bulanan.{{ $idx }}.dosen_tetap" type="number"
-                                        step="1" min="0"
-                                        class="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                                </td>
-                                <td class="px-3 py-2">
-                                    <input wire:model.defer="bulanan.{{ $idx }}.publikasi" type="number"
-                                        step="1" min="0"
-                                        class="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <button type="submit"
-                class="rounded-2xl bg-linear-to-r from-indigo-600 to-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-100">Simpan
-                Data Bulanan</button>
-        </form>
+        <div class="mt-4">
+            <a href="{{ route('admin.monthly-stats') }}"
+                class="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Kelola
+                Statistik Bulanan</a>
+        </div>
     </section>
 
 </div>

@@ -53,12 +53,20 @@ class HomePageSetting extends Model
             ],
             'quick_highlights' => [
                 [
-                    'title' => 'Statistik Kinerja Tahun Berjalan',
-                    'description' => 'Ringkasan mahasiswa, dosen, publikasi, dan akreditasi.',
-                    'link' => '#statistik-beranda',
+                    'title' => 'Dosen & Penelitian',
+                    'description' => 'Daftar dokumen DTPS, penelitian, dan publikasi dosen.',
+                    'link' => '/dokumen/kategori/dosen-penelitian',
                     'link_label' => 'Lihat Detail',
-                    'icon_key' => 'chart',
-                    'color_key' => 'blue',
+                    'icon_key' => 'users',
+                    'color_key' => 'emerald',
+                ],
+                [
+                    'title' => 'Prestasi Mahasiswa',
+                    'description' => 'Dokumentasi prestasi, kompetisi, dan kegiatan unggulan.',
+                    'link' => '/galeri/kategori/prestasi-mahasiswa',
+                    'link_label' => 'Lihat Detail',
+                    'icon_key' => 'award',
+                    'color_key' => 'amber',
                 ],
                 [
                     'title' => 'Laporan Tahunan',
@@ -69,20 +77,12 @@ class HomePageSetting extends Model
                     'color_key' => 'violet',
                 ],
                 [
-                    'title' => 'Dosen & Penelitian',
-                    'description' => 'Profil SDM, publikasi ilmiah, dan kegiatan pengabdian.',
-                    'link' => '/profil',
+                    'title' => 'Statistik Kinerja Tahun Berjalan',
+                    'description' => 'Ringkasan mahasiswa, dosen, publikasi, dan akreditasi.',
+                    'link' => '/statistik',
                     'link_label' => 'Lihat Detail',
-                    'icon_key' => 'users',
-                    'color_key' => 'emerald',
-                ],
-                [
-                    'title' => 'Prestasi Mahasiswa',
-                    'description' => 'Sorotan prestasi akademik dan non-akademik mahasiswa.',
-                    'link' => '/galeri',
-                    'link_label' => 'Lihat Detail',
-                    'icon_key' => 'award',
-                    'color_key' => 'amber',
+                    'icon_key' => 'chart',
+                    'color_key' => 'blue',
                 ],
             ],
             'header_logo_url' => '',
@@ -120,10 +120,22 @@ class HomePageSetting extends Model
                     'image_url' => 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
+                    'title' => 'Prestasi Mahasiswa: Juara Inovasi',
+                    'category' => 'Prestasi Mahasiswa',
+                    'category_slug' => 'prestasi-mahasiswa',
+                    'image_url' => 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80',
+                ],
+                [
                     'title' => 'Kegiatan Mahasiswa',
                     'category' => 'Kegiatan Mahasiswa',
                     'category_slug' => 'kegiatan-mahasiswa',
                     'image_url' => 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=900&q=80',
+                ],
+                [
+                    'title' => 'Prestasi Mahasiswa: Finalis PKM',
+                    'category' => 'Prestasi Mahasiswa',
+                    'category_slug' => 'prestasi-mahasiswa',
+                    'image_url' => 'https://images.unsplash.com/photo-1517486808906-6ca8b3f8e1e0?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
                     'title' => 'Pengabdian Masyarakat',
@@ -286,9 +298,17 @@ class HomePageSetting extends Model
         $haystack = mb_strtolower(trim($title));
 
         return match (true) {
+            str_contains($haystack, 'prestasi'),
+            str_contains($haystack, 'juara'),
+            str_contains($haystack, 'finalis'),
+            str_contains($haystack, 'kompetisi'),
+            str_contains($haystack, 'pkm') => 'Prestasi Mahasiswa',
             str_contains($haystack, 'mahasiswa') => 'Kegiatan Mahasiswa',
             str_contains($haystack, 'pengabdian') => 'Pengabdian Masyarakat',
-            str_contains($haystack, 'mou'), str_contains($haystack, 'kerjasama'), str_contains($haystack, 'kerja sama'), str_contains($haystack, 'eksternal') => 'Kerjasama & MoU',
+            str_contains($haystack, 'mou'),
+            str_contains($haystack, 'kerjasama'),
+            str_contains($haystack, 'kerja sama'),
+            str_contains($haystack, 'eksternal') => 'Kerjasama & MoU',
             default => 'Kegiatan Akademik',
         };
     }

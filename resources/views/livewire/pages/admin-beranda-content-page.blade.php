@@ -235,6 +235,18 @@
         <form wire:submit="simpanQuickHighlights" class="mt-4 space-y-4">
             @foreach ($quickHighlights as $index => $item)
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <span
+                            class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                            Posisi {{ $index + 1 }}
+                        </span>
+                        <div class="flex gap-2">
+                            <button type="button" wire:click="pindahQuickHighlightKeAtas({{ $index }})"
+                                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Naik</button>
+                            <button type="button" wire:click="pindahQuickHighlightKeBawah({{ $index }})"
+                                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Turun</button>
+                        </div>
+                    </div>
                     <div class="grid gap-3 md:grid-cols-2">
                         <label class="text-sm">Judul
                             <input wire:model.defer="quickHighlights.{{ $index }}.title" type="text"
@@ -301,7 +313,16 @@
 
         <div class="mt-4 flex flex-wrap gap-2">
             @php
-                $adminGalleryKategori = collect($galleryItems)->pluck('category')->filter()->unique()->values();
+                $adminGalleryKategori = collect([
+                    'Prestasi Mahasiswa',
+                    'Kegiatan Akademik',
+                    'Kegiatan Mahasiswa',
+                    'Pengabdian Masyarakat',
+                    'Kerjasama & MoU',
+                ])
+                    ->merge(collect($galleryItems)->pluck('category')->filter())
+                    ->unique()
+                    ->values();
             @endphp
             <button type="button" wire:click="pilihKategoriGaleri('Semua')"
                 class="rounded-full px-4 py-2 text-xs font-semibold {{ $galeriKategoriDipilih === 'Semua' ? 'bg-(--accent) text-white' : 'border border-slate-300 bg-white text-slate-700' }}">Semua</button>
@@ -324,11 +345,22 @@
                         <label class="text-sm">Kategori
                             <select wire:model.defer="galleryItems.{{ $index }}.category"
                                 class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                                <option value="Kegiatan Akademik">Kegiatan Akademik</option>
-                                <option value="Kegiatan Mahasiswa">Kegiatan Mahasiswa</option>
-                                <option value="Pengabdian Masyarakat">Pengabdian Masyarakat</option>
-                                <option value="Kerjasama & MoU">Kerjasama &amp; MoU</option>
+                                @foreach ($adminGalleryKategori as $kategoriOption)
+                                    <option value="{{ $kategoriOption }}">{{ $kategoriOption }}</option>
+                                @endforeach
+                                <option value="__new__">+ Tambah Kategori Baru</option>
                             </select>
+
+                            @if ((string) data_get($item, 'category') === '__new__')
+                                <input wire:model.defer="galleryItems.{{ $index }}.custom_category"
+                                    type="text" placeholder="Nama kategori baru"
+                                    class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+                                @error("galleryItems.$index.custom_category")
+                                    <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                                @enderror
+                            @endif
+
+                            <p class="mt-1 text-xs text-slate-500">Pilih dari daftar, atau tambah kategori baru.</p>
                         </label>
                         <label class="text-sm">Upload Gambar Galeri
                             <input wire:model="galleryImageFiles.{{ $index }}" type="file"

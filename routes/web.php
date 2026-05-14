@@ -13,8 +13,10 @@ use App\Livewire\Pages\GaleriPage;
 use App\Livewire\Pages\KontakPage;
 use App\Livewire\Pages\LaporanPage;
 use App\Livewire\Pages\ProfilPage;
+use App\Livewire\Pages\ProgramAgendaDetailPage;
 use App\Livewire\Pages\ProfileDetailPage;
 use App\Livewire\Pages\StatistikPage;
+use App\Livewire\Pages\AdminMonthlyStatsPage;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DocumentCategoryPdfController;
 use App\Http\Controllers\LaporanAllYearsPdfController;
@@ -34,6 +36,7 @@ Route::get('/dokumen/kategori/{kategori}', DokumenPage::class)->name('dokumen.ca
 Route::get('/galeri', GaleriPage::class)->name('galeri');
 Route::get('/galeri/kategori/{kategori}', GaleriPage::class)->name('galeri.category');
 Route::get('/kontak', KontakPage::class)->name('kontak');
+Route::get('/program-agenda/{id}-{slug}', ProgramAgendaDetailPage::class)->name('program-agenda.detail');
 Route::get('/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
 Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
 Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
@@ -43,6 +46,7 @@ Route::middleware('admin.auth')->group(function (): void {
     Route::get('/admin/dashboard-data', AdminDashboardDataPage::class)->name('admin.dashboard-data');
     Route::get('/admin/laporan-tahunan', AdminAnnualReportPage::class)->name('admin.annual-report');
     Route::get('/admin/program-agenda', AdminProgramAgendaPage::class)->name('admin.program-agenda');
+    Route::get('/admin/bulanan-statistik', AdminMonthlyStatsPage::class)->name('admin.monthly-stats');
     Route::get('/admin/profil', AdminProfilePage::class)->name('admin.profile');
     Route::get('/admin/konten-beranda', AdminBerandaContentPage::class)->name('admin.beranda-content');
     Route::get('/admin/dokumen', AdminDocumentPage::class)->name('admin.documents');
