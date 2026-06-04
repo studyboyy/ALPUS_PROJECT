@@ -19,7 +19,7 @@
                     class="px-4 py-2 text-xs font-semibold {{ $kategoriDipilih === $kategori ? 'bg-(--accent) text-white' : 'text-slate-700' }}">{{ $kategori }}</button>
                 <a wire:navigate.hover
                     href="{{ route('galeri.category', ['kategori' => $kategoriSlugMap[$kategori] ?? Illuminate\Support\Str::slug($kategori)]) }}"
-                    class="border-l border-(--line) px-3 py-2 text-[11px] font-semibold text-slate-500 hover:bg-slate-50">URL</a>
+                    class=" border-(--line) py-2 text-[11px] font-semibold text-slate-500 hover:bg-slate-50"></a>
             </div>
         @endforeach
     </div>
