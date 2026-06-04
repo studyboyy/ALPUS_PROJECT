@@ -21,6 +21,9 @@ class StatistikPage extends Component
     public int $tahunDipilih = 0;
     public string $trendMode = 'year';
 
+    // Chart A: Mahasiswa Aktif & Dosen Tetap (angka absolut besar)
+    // Chart B: IPK Rata-rata & Publikasi (skala kecil, berbeda satuan)
+
     public function mount(): void
     {
         if ($this->tahunDipilih <= 0) {
@@ -52,125 +55,116 @@ class StatistikPage extends Component
         $this->trendMode = $mode;
     }
 
+    /**
+     * Build two separate trend charts so each uses its own Y-axis scale:
+     *   chartA → Mahasiswa Aktif & Dosen Tetap (large absolute numbers)
+     *   chartB → IPK Rata-rata & Publikasi (small/different scale)
+     */
     private function buildTrendFromHistory(\Illuminate\Support\Collection $stats, int $activeYear, string $mode = 'year'): array
     {
         $sortedStats = $stats->sortBy('year')->values();
 
         $window = $mode === 'all'
             ? $sortedStats
-            : $sortedStats
-            ->filter(fn(DashboardYearStat $s) => $s->year === $activeYear)
-            ->values();
+            : $sortedStats->filter(fn(DashboardYearStat $s) => $s->year === $activeYear)->values();
 
-        $years = $window->pluck('year')->map(fn($year) => (int) $year)->values()->all();
-
+        // Need at least 2 data points for meaningful trend; duplicate single point so lines render
         if ($window->count() === 1) {
             $single = $window->first();
-            $singleYear = (int) data_get($single, 'year', $activeYear);
-
-            $mahasiswa = (float) data_get($single, 'kpi.0.value', 0);
-            $ipk = (float) data_get($single, 'kpi.1.value', 0);
-            $publikasi = (float) data_get($single, 'kpi.3.value', 0);
-            $dosen = (float) data_get($single, 'kpi.2.value', 0);
-            $ringkasan = DashboardMonthlyStat::summarizeYear($singleYear, $single->kpi ?? []);
-            $progressYtd = (float) collect(data_get($ringkasan, 'items', []))->avg('progress');
-
-            $allValues = [$mahasiswa, $ipk, $publikasi, $dosen, $progressYtd];
-            $globalMin = min($allValues);
-            $globalMax = max($allValues);
-            if ($globalMin === $globalMax) {
-                $globalMax = $globalMin + 1;
-            }
-
-            [$mahasiswaPolyline, $mahasiswaLastY] = $this->buildPolylineFromValues([$mahasiswa, $mahasiswa], $globalMin, $globalMax);
-            [$ipkPolyline, $ipkLastY] = $this->buildPolylineFromValues([$ipk, $ipk], $globalMin, $globalMax);
-            [$publikasiPolyline, $publikasiLastY] = $this->buildPolylineFromValues([$publikasi, $publikasi], $globalMin, $globalMax);
-            [$dosenPolyline, $dosenLastY] = $this->buildPolylineFromValues([$dosen, $dosen], $globalMin, $globalMax);
-            [$progressPolyline, $progressLastY] = $this->buildPolylineFromValues([$progressYtd, $progressYtd], $globalMin, $globalMax);
-            $axis = $this->buildTrendAxis([$singleYear], $globalMin, $globalMax);
-
-            return [
-                'mahasiswa' => $mahasiswaPolyline,
-                'ipk' => $ipkPolyline,
-                'publikasi' => $publikasiPolyline,
-                'dosen' => $dosenPolyline,
-                'progressYtd' => $progressPolyline,
-                'lastX' => self::CHART_X_END,
-                'mahasiswaLastY' => $mahasiswaLastY,
-                'ipkLastY' => $ipkLastY,
-                'publikasiLastY' => $publikasiLastY,
-                'dosenLastY' => $dosenLastY,
-                'progressLastY' => $progressLastY,
-                'trendMode' => $mode,
-                'rangeLabel' => 'Per Tahun ' . $singleYear,
-                'yearTicks' => $axis['yearTicks'],
-                'yTicks' => $axis['yTicks'],
-            ];
+            $window = collect([$single, $single]);
         }
 
-        if ($window->count() < 2) {
-            $fallback = [self::CHART_X_START, 103, 172, 241, self::CHART_X_END];
-            return [
-                'mahasiswa' => collect($fallback)->map(fn($x) => $x . ',74')->implode(' '),
-                'ipk' => collect($fallback)->map(fn($x) => $x . ',88')->implode(' '),
-                'publikasi' => collect($fallback)->map(fn($x) => $x . ',102')->implode(' '),
-                'dosen' => collect($fallback)->map(fn($x) => $x . ',114')->implode(' '),
-                'progressYtd' => collect($fallback)->map(fn($x) => $x . ',96')->implode(' '),
-                'lastX' => self::CHART_X_END,
-                'mahasiswaLastY' => 74,
-                'ipkLastY' => 88,
-                'publikasiLastY' => 102,
-                'dosenLastY' => 114,
-                'progressLastY' => 96,
-                'trendMode' => $mode,
-                'rangeLabel' => $mode === 'all' ? 'Semua Tahun' : 'Per Tahun ' . $activeYear,
-                'yearTicks' => $this->buildYearTicks([]),
-                'yTicks' => $this->buildValueTicks(0, 120),
-            ];
+        if ($window->isEmpty()) {
+            return $this->buildFallbackTrend($mode, $activeYear);
         }
 
-        $mahasiswaValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '0.value', 0))->all();
-        $ipkValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '1.value', 0))->all();
-        $publikasiValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '3.value', 0))->all();
-        $dosenValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '2.value', 0))->all();
-        $progressValues = $window
-            ->map(function (DashboardYearStat $s): float {
-                DashboardMonthlyStat::ensureYear((int) $s->year, $s->kpi ?? []);
-                $ringkasan = DashboardMonthlyStat::summarizeYear((int) $s->year, $s->kpi ?? []);
-                return (float) collect(data_get($ringkasan, 'items', []))->avg('progress');
-            })
-            ->all();
+        $years = $window->pluck('year')->map(fn($y) => (int) $y)->values()->all();
 
-        $allValues = array_merge($mahasiswaValues, $ipkValues, $publikasiValues, $dosenValues, $progressValues);
-        $globalMin = min($allValues);
-        $globalMax = max($allValues);
+        // Collect raw values per series
+        $mahasiswaValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '0.value', 0))->values()->all();
+        $ipkValues       = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '1.value', 0))->values()->all();
+        $dosenValues     = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '2.value', 0))->values()->all();
+        $publikasiValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '3.value', 0))->values()->all();
 
-        [$mahasiswaPolyline, $mahasiswaLastY] = $this->buildPolylineFromValues($mahasiswaValues, $globalMin, $globalMax);
-        [$ipkPolyline, $ipkLastY] = $this->buildPolylineFromValues($ipkValues, $globalMin, $globalMax);
-        [$publikasiPolyline, $publikasiLastY] = $this->buildPolylineFromValues($publikasiValues, $globalMin, $globalMax);
-        [$dosenPolyline, $dosenLastY] = $this->buildPolylineFromValues($dosenValues, $globalMin, $globalMax);
-        [$progressPolyline, $progressLastY] = $this->buildPolylineFromValues($progressValues, $globalMin, $globalMax);
-        $axis = $this->buildTrendAxis($years, $globalMin, $globalMax);
+        // ── Chart A: Mahasiswa & Dosen (shared Y scale for both so they're comparable) ──
+        $aValues = array_merge($mahasiswaValues, $dosenValues);
+        $aMin = min($aValues);
+        $aMax = max($aValues);
+        if ($aMin === $aMax) { $aMax = $aMin + 1; }
+
+        [$mahasiswaPolyline, $mahasiswaLastY] = $this->buildPolylineFromValues($mahasiswaValues, $aMin, $aMax);
+        [$dosenPolyline,     $dosenLastY]     = $this->buildPolylineFromValues($dosenValues,     $aMin, $aMax);
+        $axisA = $this->buildTrendAxis($years, $aMin, $aMax);
+
+        // ── Chart B: IPK & Publikasi (each gets its own axis, displayed with dual labels) ──
+        $ipkMin = min($ipkValues);
+        $ipkMax = max($ipkValues);
+        if ($ipkMin === $ipkMax) { $ipkMax = $ipkMin + 0.1; }
+
+        $pubMin = min($publikasiValues);
+        $pubMax = max($publikasiValues);
+        if ($pubMin === $pubMax) { $pubMax = $pubMin + 1; }
+
+        [$ipkPolyline,       $ipkLastY]       = $this->buildPolylineFromValues($ipkValues,       $ipkMin, $ipkMax);
+        [$publikasiPolyline, $publikasiLastY]  = $this->buildPolylineFromValues($publikasiValues, $pubMin, $pubMax);
+
+        // Y-axis ticks for chart B: show IPK scale on left, Publikasi scale on right
+        $axisB_ipk  = $this->buildValueTicks($ipkMin, $ipkMax, 2);
+        $axisB_pub  = $this->buildValueTicks($pubMin, $pubMax, 0);
+        $yearTicksB = $this->buildYearTicks($years);
 
         $firstYear = (int) ($years[0] ?? $activeYear);
-        $lastYear = (int) ($years[count($years) - 1] ?? $activeYear);
+        $lastYear  = (int) ($years[count($years) - 1] ?? $activeYear);
+        $rangeLabel = $mode === 'all'
+            ? 'Semua Tahun (' . $firstYear . ' – ' . $lastYear . ')'
+            : 'Per Tahun ' . $lastYear;
 
         return [
-            'mahasiswa' => $mahasiswaPolyline,
-            'ipk' => $ipkPolyline,
-            'publikasi' => $publikasiPolyline,
-            'dosen' => $dosenPolyline,
-            'progressYtd' => $progressPolyline,
-            'lastX' => self::CHART_X_END,
-            'mahasiswaLastY' => $mahasiswaLastY,
-            'ipkLastY' => $ipkLastY,
-            'publikasiLastY' => $publikasiLastY,
-            'dosenLastY' => $dosenLastY,
-            'progressLastY' => $progressLastY,
-            'trendMode' => $mode,
-            'rangeLabel' => $mode === 'all' ? ('Semua Tahun (' . $firstYear . ' - ' . $lastYear . ')') : ('Per Tahun ' . $lastYear),
-            'yearTicks' => $axis['yearTicks'],
-            'yTicks' => $axis['yTicks'],
+            // Chart A — Mahasiswa & Dosen
+            'chartA' => [
+                'mahasiswa'      => $mahasiswaPolyline,
+                'dosen'          => $dosenPolyline,
+                'mahasiswaLastY' => $mahasiswaLastY,
+                'dosenLastY'     => $dosenLastY,
+                'lastX'          => self::CHART_X_END,
+                'yearTicks'      => $axisA['yearTicks'],
+                'yTicks'         => $axisA['yTicks'],
+            ],
+            // Chart B — IPK & Publikasi (dual scale)
+            'chartB' => [
+                'ipk'            => $ipkPolyline,
+                'publikasi'      => $publikasiPolyline,
+                'ipkLastY'       => $ipkLastY,
+                'publikasiLastY' => $publikasiLastY,
+                'lastX'          => self::CHART_X_END,
+                'yearTicks'      => $yearTicksB,
+                'yTicksIpk'      => $axisB_ipk,
+                'yTicksPub'      => $axisB_pub,
+            ],
+            'trendMode'  => $mode,
+            'rangeLabel' => $rangeLabel,
+        ];
+    }
+
+    private function buildFallbackTrend(string $mode, int $activeYear): array
+    {
+        $midY = (self::CHART_Y_TOP + self::CHART_Y_BOTTOM) / 2;
+        $flat = self::CHART_X_START . ',' . $midY . ' ' . self::CHART_X_END . ',' . $midY;
+        $rangeLabel = $mode === 'all' ? 'Semua Tahun' : 'Per Tahun ' . $activeYear;
+
+        return [
+            'chartA' => [
+                'mahasiswa' => $flat, 'dosen' => $flat,
+                'mahasiswaLastY' => $midY, 'dosenLastY' => $midY,
+                'lastX' => self::CHART_X_END, 'yearTicks' => [], 'yTicks' => [],
+            ],
+            'chartB' => [
+                'ipk' => $flat, 'publikasi' => $flat,
+                'ipkLastY' => $midY, 'publikasiLastY' => $midY,
+                'lastX' => self::CHART_X_END, 'yearTicks' => [], 'yTicksIpk' => [], 'yTicksPub' => [],
+            ],
+            'trendMode'  => $mode,
+            'rangeLabel' => $rangeLabel,
         ];
     }
 
@@ -216,15 +210,21 @@ class StatistikPage extends Component
             ->all();
     }
 
-    private function buildValueTicks(float $minValue, float $maxValue): array
+    private function buildValueTicks(float $minValue, float $maxValue, int $decimals = 0): array
     {
         if ($maxValue <= $minValue) {
-            $maxValue = $minValue + 1;
+            $maxValue = $minValue + ($decimals > 0 ? 0.1 : 1);
         }
 
         $steps = 4;
         $range = $maxValue - $minValue;
         $stepSize = $this->calculateNiceStep($range / $steps);
+
+        // For small-range decimals (IPK), ensure a minimum step so labels differ
+        if ($decimals > 0 && $stepSize < 0.01) {
+            $stepSize = 0.01;
+        }
+
         $niceMin = floor($minValue / $stepSize) * $stepSize;
         $niceMax = ceil($maxValue / $stepSize) * $stepSize;
         if ($niceMax <= $niceMin) {
@@ -238,7 +238,7 @@ class StatistikPage extends Component
             $value = $niceMax - ($ratio * ($niceMax - $niceMin));
             $ticks[] = [
                 'y' => round($y, 1),
-                'label' => number_format($value, 0, ',', '.'),
+                'label' => number_format(round($value, $decimals), $decimals, ',', '.'),
             ];
         }
 

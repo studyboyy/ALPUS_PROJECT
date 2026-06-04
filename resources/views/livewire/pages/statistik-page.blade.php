@@ -39,10 +39,11 @@
         </div>
     </article>
 
-    <article class="section-box rounded-2xl p-6">
+    <article class="section-box rounded-2xl p-6 lg:col-span-2">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="text-sm font-semibold">Tren Indikator Utama</p>
             <div class="flex items-center gap-2">
+                <span class="text-[11px] text-(--muted)">{{ data_get($trendVisual, 'rangeLabel', '') }}</span>
                 <button type="button" wire:click="pilihTrendMode('year')"
                     class="rounded-full px-3 py-1 text-[11px] font-semibold transition {{ data_get($trendVisual, 'trendMode', 'year') === 'year' ? 'bg-(--accent) text-white' : 'border border-(--line) bg-white text-(--muted)' }}">Per
                     Tahun</button>
@@ -51,49 +52,98 @@
                     Tahun</button>
             </div>
         </div>
-        <div class="mt-4 rounded-xl border border-(--line) bg-slate-50 p-4">
-            <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-(--muted)">
-                {{ data_get($trendVisual, 'rangeLabel', 'Ringkasan data') }}</p>
-            <svg viewBox="0 0 340 170" class="h-44 w-full">
-                @foreach (data_get($trendVisual, 'yTicks', []) as $tick)
-                    <line x1="34" y1="{{ data_get($tick, 'y') }}" x2="310"
-                        y2="{{ data_get($tick, 'y') }}" stroke="#dbe5f2" stroke-width="1" />
-                    <text x="28" y="{{ data_get($tick, 'y') + 3 }}" text-anchor="end" font-size="9"
-                        fill="#64748b">{{ data_get($tick, 'label') }}</text>
-                @endforeach
 
-                <polyline points="{{ data_get($trendVisual, 'mahasiswa', '') }}" fill="none" stroke="#1d4ed8"
-                    stroke-width="4" />
-                <polyline points="{{ data_get($trendVisual, 'ipk', '') }}" fill="none" stroke="#0f766e"
-                    stroke-width="4" />
-                <polyline points="{{ data_get($trendVisual, 'publikasi', '') }}" fill="none" stroke="#ea580c"
-                    stroke-width="3" stroke-dasharray="6 5" />
-                <polyline points="{{ data_get($trendVisual, 'dosen', '') }}" fill="none" stroke="#fb923c"
-                    stroke-width="3" />
-                <polyline points="{{ data_get($trendVisual, 'progressYtd', '') }}" fill="none" stroke="#7c3aed"
-                    stroke-width="3" stroke-dasharray="3 3" />
-                <circle cx="{{ data_get($trendVisual, 'lastX', 310) }}"
-                    cy="{{ data_get($trendVisual, 'mahasiswaLastY', 90) }}" r="5" fill="#1d4ed8" />
-                <circle cx="{{ data_get($trendVisual, 'lastX', 310) }}"
-                    cy="{{ data_get($trendVisual, 'ipkLastY', 96) }}" r="5" fill="#0f766e" />
-                <circle cx="{{ data_get($trendVisual, 'lastX', 310) }}"
-                    cy="{{ data_get($trendVisual, 'publikasiLastY', 102) }}" r="4" fill="#ea580c" />
-                <circle cx="{{ data_get($trendVisual, 'lastX', 310) }}"
-                    cy="{{ data_get($trendVisual, 'dosenLastY', 108) }}" r="4" fill="#fb923c" />
-                <circle cx="{{ data_get($trendVisual, 'lastX', 310) }}"
-                    cy="{{ data_get($trendVisual, 'progressLastY', 96) }}" r="4" fill="#7c3aed" />
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+            {{-- Chart A: Mahasiswa Aktif & Dosen Tetap --}}
+            @php $cA = data_get($trendVisual, 'chartA', []); @endphp
+            <div class="rounded-xl border border-(--line) bg-slate-50 p-4">
+                <p class="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-(--muted)">Mahasiswa Aktif &amp; Dosen Tetap</p>
+                <svg viewBox="0 0 340 155" class="h-40 w-full">
+                    {{-- Grid & Y-axis labels --}}
+                    @foreach (data_get($cA, 'yTicks', []) as $tick)
+                        <line x1="34" y1="{{ data_get($tick, 'y') }}" x2="310"
+                            y2="{{ data_get($tick, 'y') }}" stroke="#dbe5f2" stroke-width="1" />
+                        <text x="28" y="{{ data_get($tick, 'y') + 3 }}" text-anchor="end" font-size="9"
+                            fill="#64748b">{{ data_get($tick, 'label') }}</text>
+                    @endforeach
 
-                @foreach (data_get($trendVisual, 'yearTicks', []) as $tick)
-                    <text x="{{ data_get($tick, 'x') }}" y="147" text-anchor="middle" font-size="9"
-                        fill="#64748b">{{ data_get($tick, 'year') }}</text>
-                @endforeach
-            </svg>
-            <div class="mt-2 flex flex-wrap gap-4 text-xs text-(--muted)">
-                <span>Garis biru: Mahasiswa</span>
-                <span>Garis hijau: IPK</span>
-                <span>Garis oranye putus: Publikasi</span>
-                <span>Garis oranye terang: Dosen Tetap</span>
-                <span>Garis ungu putus: Progres Kinerja YTD (%)</span>
+                    {{-- Mahasiswa line (blue) --}}
+                    <polyline points="{{ data_get($cA, 'mahasiswa', '') }}" fill="none" stroke="#1d4ed8"
+                        stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+                    {{-- Dosen line (teal) --}}
+                    <polyline points="{{ data_get($cA, 'dosen', '') }}" fill="none" stroke="#0f766e"
+                        stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+
+                    {{-- End-point dots --}}
+                    <circle cx="{{ data_get($cA, 'lastX', 310) }}" cy="{{ data_get($cA, 'mahasiswaLastY', 74) }}"
+                        r="4" fill="#1d4ed8" />
+                    <circle cx="{{ data_get($cA, 'lastX', 310) }}" cy="{{ data_get($cA, 'dosenLastY', 88) }}"
+                        r="4" fill="#0f766e" />
+
+                    {{-- X-axis year labels --}}
+                    @foreach (data_get($cA, 'yearTicks', []) as $tick)
+                        <text x="{{ data_get($tick, 'x') }}" y="147" text-anchor="middle" font-size="9"
+                            fill="#64748b">{{ data_get($tick, 'year') }}</text>
+                    @endforeach
+                </svg>
+                <div class="mt-2 flex flex-wrap gap-4 text-[11px] text-(--muted)">
+                    <span class="flex items-center gap-1">
+                        <span class="inline-block h-0.5 w-5 rounded bg-blue-700"></span> Mahasiswa Aktif
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <span class="inline-block h-0.5 w-5 rounded bg-teal-700"></span> Dosen Tetap
+                    </span>
+                </div>
+            </div>
+
+            {{-- Chart B: IPK Rata-rata & Publikasi (dual Y scale) --}}
+            @php $cB = data_get($trendVisual, 'chartB', []); @endphp
+            <div class="rounded-xl border border-(--line) bg-slate-50 p-4">
+                <p class="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-(--muted)">IPK Rata-rata &amp; Publikasi</p>
+                <svg viewBox="0 0 360 155" class="h-40 w-full">
+                    {{-- IPK Y-axis (left) --}}
+                    @foreach (data_get($cB, 'yTicksIpk', []) as $tick)
+                        <line x1="44" y1="{{ data_get($tick, 'y') }}" x2="310"
+                            y2="{{ data_get($tick, 'y') }}" stroke="#dbe5f2" stroke-width="1" />
+                        <text x="38" y="{{ data_get($tick, 'y') + 3 }}" text-anchor="end" font-size="9"
+                            fill="#0f766e">{{ data_get($tick, 'label') }}</text>
+                    @endforeach
+
+                    {{-- Publikasi Y-axis (right) --}}
+                    @foreach (data_get($cB, 'yTicksPub', []) as $tick)
+                        <text x="316" y="{{ data_get($tick, 'y') + 3 }}" text-anchor="start" font-size="9"
+                            fill="#ea580c">{{ data_get($tick, 'label') }}</text>
+                    @endforeach
+
+                    {{-- IPK line (green) --}}
+                    <polyline points="{{ data_get($cB, 'ipk', '') }}" fill="none" stroke="#0f766e"
+                        stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+                    {{-- Publikasi line (orange dashed) --}}
+                    <polyline points="{{ data_get($cB, 'publikasi', '') }}" fill="none" stroke="#ea580c"
+                        stroke-width="2.5" stroke-dasharray="6 4" stroke-linejoin="round" stroke-linecap="round" />
+
+                    {{-- End-point dots --}}
+                    <circle cx="{{ data_get($cB, 'lastX', 310) }}" cy="{{ data_get($cB, 'ipkLastY', 74) }}"
+                        r="4" fill="#0f766e" />
+                    <circle cx="{{ data_get($cB, 'lastX', 310) }}" cy="{{ data_get($cB, 'publikasiLastY', 88) }}"
+                        r="4" fill="#ea580c" />
+
+                    {{-- X-axis year labels --}}
+                    @foreach (data_get($cB, 'yearTicks', []) as $tick)
+                        <text x="{{ data_get($tick, 'x') }}" y="147" text-anchor="middle" font-size="9"
+                            fill="#64748b">{{ data_get($tick, 'year') }}</text>
+                    @endforeach
+                </svg>
+                <div class="mt-2 flex flex-wrap gap-4 text-[11px] text-(--muted)">
+                    <span class="flex items-center gap-1">
+                        <span class="inline-block h-0.5 w-5 rounded bg-teal-700"></span>
+                        <span class="text-teal-700">IPK</span> (skala kiri)
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <span class="inline-block h-0.5 w-5 rounded border-t-2 border-dashed border-orange-600"></span>
+                        <span class="text-orange-600">Publikasi</span> (skala kanan)
+                    </span>
+                </div>
             </div>
         </div>
     </article>
