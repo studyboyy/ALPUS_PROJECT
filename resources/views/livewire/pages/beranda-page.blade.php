@@ -169,73 +169,138 @@
                                 data-decimals="{{ $kpi['decimals'] }}">{{ $kpi['value'] }}</span>
                         </p>
                     </div>
-                    <div class="mt-6 flex items-center gap-2">
-                        @foreach (collect($homeContent['hero_items'] ?? [])->values() as $index => $hero)
-                            <button type="button" data-hero-dot="{{ $index }}"
-                                class="js-hero-dot h-2.5 rounded-full bg-white/55 transition-all {{ $index === 0 ? 'w-7 bg-white' : 'w-2.5' }}"></button>
-                        @endforeach
-                    </div>
+                @endforeach
+            </div>
+            {{-- Hero carousel navigation dots (satu set, di luar loop KPI) --}}
+            <div class="mt-4 flex items-center gap-2">
+                @foreach (collect($homeContent['hero_items'] ?? [])->values() as $index => $hero)
+                    <button type="button" data-hero-dot="{{ $index }}"
+                        class="js-hero-dot h-2.5 rounded-full bg-slate-300 transition-all {{ $index === 0 ? 'w-7 bg-(--accent)' : 'w-2.5' }}"></button>
                 @endforeach
             </div>
         </article>
 
-        <article class="section-box rounded-2xl p-6">
+        <article class="section-box rounded-2xl p-6"
+                 x-data="berandaTrendChart({{ json_encode(data_get($statistikAktif, 'trend.tooltipData', []), JSON_UNESCAPED_UNICODE) }})"
+                 x-init="init()">
             <div class="flex flex-wrap items-center justify-between gap-2">
-                <p class="text-sm font-semibold">Tren Indikator Utama</p>
-                <div class="flex items-center gap-2">
+                <div>
+                    <p class="text-sm font-semibold">Tren Indikator Utama</p>
+                    <p class="mt-0.5 text-[11px] text-(--muted)">{{ data_get($statistikAktif, 'trend.rangeLabel', '') }}</p>
+                </div>
+                <div class="flex items-center gap-1.5">
                     <button type="button" wire:click="pilihTrendMode('year')"
-                        class="rounded-full px-3 py-1 text-[11px] font-semibold transition {{ data_get($statistikAktif, 'trend.trendMode', 'year') === 'year' ? 'bg-(--accent) text-white' : 'border border-(--line) bg-white text-(--muted)' }}">Per
-                        Tahun</button>
+                        class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition {{ data_get($statistikAktif, 'trend.trendMode', 'year') === 'year' ? 'bg-(--accent) text-white shadow-sm' : 'border border-(--line) bg-white text-(--muted) hover:bg-slate-50' }}">Per Tahun</button>
                     <button type="button" wire:click="pilihTrendMode('all')"
-                        class="rounded-full px-3 py-1 text-[11px] font-semibold transition {{ data_get($statistikAktif, 'trend.trendMode', 'year') === 'all' ? 'bg-(--accent) text-white' : 'border border-(--line) bg-white text-(--muted)' }}">Semua
-                        Tahun</button>
+                        class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition {{ data_get($statistikAktif, 'trend.trendMode', 'year') === 'all' ? 'bg-(--accent) text-white shadow-sm' : 'border border-(--line) bg-white text-(--muted) hover:bg-slate-50' }}">Semua Tahun</button>
                 </div>
             </div>
-            <div class="mt-4 rounded-xl border border-(--line) bg-slate-50 p-4">
-                <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-(--muted)">
-                    {{ data_get($statistikAktif, 'trend.rangeLabel', 'Ringkasan data') }}</p>
-                <svg viewBox="0 0 340 170" class="js-trend-chart h-44 w-full">
+
+            <div class="relative mt-4 rounded-xl border border-(--line) bg-white p-4 shadow-sm">
+                <svg id="beranda-trend-svg" viewBox="0 0 340 148" class="h-44 w-full overflow-visible"
+                     @mousemove="onMouseMove($event)" @mouseleave="onMouseLeave()">
+
                     @foreach (data_get($statistikAktif, 'trend.yTicks', []) as $tick)
                         <line x1="34" y1="{{ data_get($tick, 'y') }}" x2="310"
-                            y2="{{ data_get($tick, 'y') }}" stroke="#dbe5f2" stroke-width="1" />
-                        <text x="28" y="{{ data_get($tick, 'y') + 3 }}" text-anchor="end" font-size="9"
-                            fill="#64748b">{{ data_get($tick, 'label') }}</text>
+                            y2="{{ data_get($tick, 'y') }}" stroke="#e2e8f0" stroke-width="1" />
+                        <text x="30" y="{{ data_get($tick, 'y') + 3.5 }}" text-anchor="end"
+                            font-size="8.5" fill="#94a3b8">{{ data_get($tick, 'label') }}</text>
                     @endforeach
 
-                    <polyline class="js-trend-line" points="{{ $statistikAktif['trend']['mahasiswa'] }}" fill="none"
-                        stroke="#1d4ed8" stroke-width="4" />
-                    <polyline class="js-trend-line" points="{{ $statistikAktif['trend']['ipk'] }}" fill="none"
-                        stroke="#0f766e" stroke-width="4" />
-                    <polyline class="js-trend-line" points="{{ $statistikAktif['trend']['publikasi'] }}"
-                        fill="none" stroke="#ea580c" stroke-width="3" stroke-dasharray="6 5" />
-                    <polyline class="js-trend-line" points="{{ $statistikAktif['trend']['dosen'] }}" fill="none"
-                        stroke="#fb923c" stroke-width="3" />
-                    <polyline class="js-trend-line" points="{{ data_get($statistikAktif, 'trend.progressYtd', '') }}"
-                        fill="none" stroke="#7c3aed" stroke-width="3" stroke-dasharray="3 3" />
-                    <circle class="js-trend-dot" cx="{{ data_get($statistikAktif, 'trend.lastX', 310) }}"
-                        cy="{{ $statistikAktif['trend']['mahasiswaLastY'] }}" r="5" fill="#1d4ed8" />
-                    <circle class="js-trend-dot" cx="{{ data_get($statistikAktif, 'trend.lastX', 310) }}"
-                        cy="{{ $statistikAktif['trend']['ipkLastY'] }}" r="5" fill="#0f766e" />
-                    <circle class="js-trend-dot" cx="{{ data_get($statistikAktif, 'trend.lastX', 310) }}"
-                        cy="{{ $statistikAktif['trend']['publikasiLastY'] }}" r="4" fill="#ea580c" />
-                    <circle class="js-trend-dot" cx="{{ data_get($statistikAktif, 'trend.lastX', 310) }}"
-                        cy="{{ $statistikAktif['trend']['dosenLastY'] }}" r="4" fill="#fb923c" />
-                    <circle class="js-trend-dot" cx="{{ data_get($statistikAktif, 'trend.lastX', 310) }}"
-                        cy="{{ data_get($statistikAktif, 'trend.progressLastY', 96) }}" r="4" fill="#7c3aed" />
+                    {{-- Area fills --}}
+                    @php
+                        $mPts = $statistikAktif['trend']['mahasiswa'] ?? '';
+                        $firstMX = $mPts ? (float) explode(',', explode(' ', trim($mPts))[0])[0] : 34;
+                        $lastX   = data_get($statistikAktif,'trend.lastX', 310);
+                    @endphp
+                    <polygon points="{{ $mPts }} {{ $lastX }},128 {{ $firstMX }},128"
+                        fill="#1d4ed8" fill-opacity="0.05" />
+
+                    <polyline points="{{ $statistikAktif['trend']['mahasiswa'] }}" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+                    <polyline points="{{ $statistikAktif['trend']['ipk'] }}" fill="none" stroke="#0f766e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+                    <polyline points="{{ $statistikAktif['trend']['publikasi'] }}" fill="none" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="5 3" stroke-linejoin="round" stroke-linecap="round" />
+                    <polyline points="{{ $statistikAktif['trend']['dosen'] }}" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+                    <polyline points="{{ data_get($statistikAktif,'trend.progressYtd','') }}" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="3 2" stroke-linejoin="round" stroke-linecap="round" />
+
+                    {{-- End dots --}}
+                    <circle cx="{{ $lastX }}" cy="{{ $statistikAktif['trend']['mahasiswaLastY'] }}" r="4" fill="#1d4ed8" stroke="white" stroke-width="1.5" />
+                    <circle cx="{{ $lastX }}" cy="{{ $statistikAktif['trend']['ipkLastY'] }}" r="4" fill="#0f766e" stroke="white" stroke-width="1.5" />
+                    <circle cx="{{ $lastX }}" cy="{{ $statistikAktif['trend']['publikasiLastY'] }}" r="3.5" fill="#ea580c" stroke="white" stroke-width="1.5" />
+                    <circle cx="{{ $lastX }}" cy="{{ $statistikAktif['trend']['dosenLastY'] }}" r="3.5" fill="#fb923c" stroke="white" stroke-width="1.5" />
+                    <circle cx="{{ $lastX }}" cy="{{ data_get($statistikAktif,'trend.progressLastY',96) }}" r="3.5" fill="#7c3aed" stroke="white" stroke-width="1.5" />
+
+                    {{-- Hover crosshair --}}
+                    <line x-show="hoverIdx !== null" :x1="hoverX" y1="20" :x2="hoverX" y2="128"
+                        stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 2" />
 
                     @foreach (data_get($statistikAktif, 'trend.yearTicks', []) as $tick)
-                        <text x="{{ data_get($tick, 'x') }}" y="147" text-anchor="middle" font-size="9"
-                            fill="#64748b">{{ data_get($tick, 'year') }}</text>
+                        <text x="{{ data_get($tick, 'x') }}" y="143" text-anchor="middle"
+                            font-size="8.5" fill="#94a3b8">{{ data_get($tick, 'label', data_get($tick, 'year')) }}</text>
                     @endforeach
                 </svg>
-                <div class="mt-2 flex flex-wrap gap-4 text-xs text-(--muted)">
-                    <span>Garis biru: Mahasiswa</span>
-                    <span>Garis hijau: IPK</span>
-                    <span>Garis oranye: Publikasi</span>
-                    <span>Garis oranye terang: Dosen Tetap</span>
-                    <span>Garis ungu: Progres Kinerja </span>
+
+                {{-- Tooltip --}}
+                <div x-show="hoverIdx !== null" x-cloak
+                     :style="'left:' + tooltipLeft + 'px; top:' + tooltipTop + 'px'"
+                     class="pointer-events-none absolute z-20 min-w-[150px] rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg text-[11px] leading-5">
+                    <p class="mb-1 font-semibold text-slate-700" x-text="hoverLabel"></p>
+                    <p class="text-blue-700">Mahasiswa: <span class="font-semibold" x-text="hoverMahasiswa"></span></p>
+                    <p class="text-teal-700">IPK: <span class="font-semibold" x-text="hoverIpk"></span></p>
+                    <p class="text-orange-600">Publikasi: <span class="font-semibold" x-text="hoverPublikasi"></span></p>
+                    <p class="text-orange-400">Dosen: <span class="font-semibold" x-text="hoverDosen"></span></p>
                 </div>
             </div>
+
+            <div class="mt-3 flex flex-wrap gap-3 text-[10px] font-medium text-slate-500">
+                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-blue-700"></span>Mahasiswa</span>
+                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-teal-700"></span>IPK</span>
+                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-orange-600" style="border-top:2px dashed #ea580c;height:0"></span>Publikasi</span>
+                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-orange-400"></span>Dosen</span>
+                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-violet-600"></span>Progres</span>
+            </div>
+
+            <script>
+            function berandaTrendChart(tooltipData) {
+                return {
+                    hoverIdx: null, hoverX: 0,
+                    hoverLabel:'', hoverMahasiswa:'', hoverDosen:'', hoverIpk:'', hoverPublikasi:'',
+                    tooltipLeft: 0, tooltipTop: 0, points: [],
+                    init() {
+                        const svg = document.getElementById('beranda-trend-svg');
+                        if (!svg) return;
+                        const poly = svg.querySelector('polyline');
+                        if (!poly || !tooltipData || !tooltipData.length) return;
+                        const raw = poly.getAttribute('points').trim().split(/\s+/);
+                        this.points = raw.map(p => parseFloat(p.split(',')[0]));
+                    },
+                    onMouseMove(event) {
+                        if (!tooltipData || !tooltipData.length || !this.points.length) return;
+                        const svg = document.getElementById('beranda-trend-svg');
+                        if (!svg) return;
+                        const rect = svg.getBoundingClientRect();
+                        const scaleX = rect.width / 340;
+                        const mouseX = (event.clientX - rect.left) / scaleX;
+                        let closest = 0, minDist = Infinity;
+                        this.points.forEach((px, i) => { const d = Math.abs(px - mouseX); if (d < minDist) { minDist = d; closest = i; } });
+                        if (minDist > 18) { this.hoverIdx = null; return; }
+                        this.hoverIdx = closest;
+                        this.hoverX = this.points[closest];
+                        const d = tooltipData[closest] || {};
+                        this.hoverLabel = d.label || '';
+                        this.hoverMahasiswa = typeof d.mahasiswa === 'number' ? d.mahasiswa.toLocaleString('id-ID') : d.mahasiswa;
+                        this.hoverDosen = typeof d.dosen === 'number' ? d.dosen.toLocaleString('id-ID') : d.dosen;
+                        this.hoverIpk = typeof d.ipk === 'number' ? d.ipk.toFixed(2).replace('.', ',') : d.ipk;
+                        this.hoverPublikasi = typeof d.publikasi === 'number' ? d.publikasi.toLocaleString('id-ID') : d.publikasi;
+                        const container = svg.parentElement;
+                        const cRect = container.getBoundingClientRect();
+                        const svgLeft = this.hoverX * scaleX;
+                        this.tooltipLeft = Math.max(4, Math.min(svgLeft - 75, cRect.width - 160));
+                        this.tooltipTop = 4;
+                    },
+                    onMouseLeave() { this.hoverIdx = null; }
+                };
+            }
+            </script>
         </article>
 
         <article class="section-box rounded-2xl p-6">

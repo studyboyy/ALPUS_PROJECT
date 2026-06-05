@@ -27,64 +27,61 @@ class DashboardYearStat extends Model
     public static function defaults(): array
     {
         return [
-            2025 => [
+            2026 => [
                 'kpi' => [
-                    ['label' => 'Mahasiswa Aktif', 'value' => 1380, 'decimals' => 0],
-                    ['label' => 'IPK Rata-rata', 'value' => 3.47, 'decimals' => 2],
-                    ['label' => 'Dosen Tetap', 'value' => 57, 'decimals' => 0],
-                    ['label' => 'Publikasi', 'value' => 58, 'decimals' => 0],
+                    ['label' => 'Mahasiswa Aktif', 'value' => 200, 'decimals' => 0],
+                    ['label' => 'IPK Rata-rata',   'value' => 3.62, 'decimals' => 2],
+                    ['label' => 'Dosen Tetap',      'value' => 15,   'decimals' => 0],
+                    ['label' => 'Publikasi',        'value' => 24,   'decimals' => 0],
                 ],
                 'trend' => [
-                    'mahasiswa' => '10,130 80,110 150,90 220,65 300,45',
-                    'ipk' => '10,140 80,120 150,105 220,92 300,88',
-                    'mahasiswaLastY' => 45,
-                    'ipkLastY' => 88,
+                    'mahasiswa' => '34,110 310,76', 'ipk' => '34,102 310,84',
+                    'dosen' => '34,124 310,90', 'publikasi' => '34,118 310,72',
+                    'mahasiswaLastY' => 76, 'ipkLastY' => 84, 'dosenLastY' => 90, 'publikasiLastY' => 72,
                 ],
                 'capaian' => [
-                    ['label' => 'Mahasiswa Aktif', 'percent' => 92],
-                    ['label' => 'Lulusan Tepat Waktu', 'percent' => 81],
-                    ['label' => 'Publikasi Ilmiah', 'percent' => 74],
-                    ['label' => 'Kegiatan Dosen & Mahasiswa', 'percent' => 88],
+                    ['label' => 'Mahasiswa Aktif',            'percent' => 93],
+                    ['label' => 'Lulusan Tepat Waktu',        'percent' => 87],
+                    ['label' => 'Publikasi Ilmiah',           'percent' => 80],
+                    ['label' => 'Kegiatan Dosen & Mahasiswa', 'percent' => 90],
+                ],
+            ],
+            2025 => [
+                'kpi' => [
+                    ['label' => 'Mahasiswa Aktif', 'value' => 185, 'decimals' => 0],
+                    ['label' => 'IPK Rata-rata',   'value' => 3.52, 'decimals' => 2],
+                    ['label' => 'Dosen Tetap',      'value' => 14,   'decimals' => 0],
+                    ['label' => 'Publikasi',        'value' => 20,   'decimals' => 0],
+                ],
+                'trend' => [
+                    'mahasiswa' => '34,114 310,80', 'ipk' => '34,105 310,87',
+                    'dosen' => '34,126 310,92', 'publikasi' => '34,120 310,76',
+                    'mahasiswaLastY' => 80, 'ipkLastY' => 87, 'dosenLastY' => 92, 'publikasiLastY' => 76,
+                ],
+                'capaian' => [
+                    ['label' => 'Mahasiswa Aktif',            'percent' => 89],
+                    ['label' => 'Lulusan Tepat Waktu',        'percent' => 82],
+                    ['label' => 'Publikasi Ilmiah',           'percent' => 75],
+                    ['label' => 'Kegiatan Dosen & Mahasiswa', 'percent' => 85],
                 ],
             ],
             2024 => [
                 'kpi' => [
-                    ['label' => 'Mahasiswa Aktif', 'value' => 1245, 'decimals' => 0],
-                    ['label' => 'IPK Rata-rata', 'value' => 3.42, 'decimals' => 2],
-                    ['label' => 'Dosen Tetap', 'value' => 54, 'decimals' => 0],
-                    ['label' => 'Publikasi', 'value' => 49, 'decimals' => 0],
+                    ['label' => 'Mahasiswa Aktif', 'value' => 170, 'decimals' => 0],
+                    ['label' => 'IPK Rata-rata',   'value' => 3.41, 'decimals' => 2],
+                    ['label' => 'Dosen Tetap',      'value' => 12,   'decimals' => 0],
+                    ['label' => 'Publikasi',        'value' => 15,   'decimals' => 0],
                 ],
                 'trend' => [
-                    'mahasiswa' => '10,138 80,124 150,103 220,80 300,60',
-                    'ipk' => '10,142 80,130 150,118 220,104 300,95',
-                    'mahasiswaLastY' => 60,
-                    'ipkLastY' => 95,
+                    'mahasiswa' => '34,118 310,84', 'ipk' => '34,108 310,90',
+                    'dosen' => '34,128 310,94', 'publikasi' => '34,122 310,80',
+                    'mahasiswaLastY' => 84, 'ipkLastY' => 90, 'dosenLastY' => 94, 'publikasiLastY' => 80,
                 ],
                 'capaian' => [
-                    ['label' => 'Mahasiswa Aktif', 'percent' => 86],
-                    ['label' => 'Lulusan Tepat Waktu', 'percent' => 77],
-                    ['label' => 'Publikasi Ilmiah', 'percent' => 68],
-                    ['label' => 'Kegiatan Dosen & Mahasiswa', 'percent' => 80],
-                ],
-            ],
-            2023 => [
-                'kpi' => [
-                    ['label' => 'Mahasiswa Aktif', 'value' => 1110, 'decimals' => 0],
-                    ['label' => 'IPK Rata-rata', 'value' => 3.36, 'decimals' => 2],
-                    ['label' => 'Dosen Tetap', 'value' => 51, 'decimals' => 0],
-                    ['label' => 'Publikasi', 'value' => 42, 'decimals' => 0],
-                ],
-                'trend' => [
-                    'mahasiswa' => '10,146 80,133 150,117 220,99 300,72',
-                    'ipk' => '10,145 80,137 150,127 220,116 300,104',
-                    'mahasiswaLastY' => 72,
-                    'ipkLastY' => 104,
-                ],
-                'capaian' => [
-                    ['label' => 'Mahasiswa Aktif', 'percent' => 79],
-                    ['label' => 'Lulusan Tepat Waktu', 'percent' => 71],
-                    ['label' => 'Publikasi Ilmiah', 'percent' => 62],
-                    ['label' => 'Kegiatan Dosen & Mahasiswa', 'percent' => 73],
+                    ['label' => 'Mahasiswa Aktif',            'percent' => 84],
+                    ['label' => 'Lulusan Tepat Waktu',        'percent' => 76],
+                    ['label' => 'Publikasi Ilmiah',           'percent' => 70],
+                    ['label' => 'Kegiatan Dosen & Mahasiswa', 'percent' => 79],
                 ],
             ],
         ];
@@ -96,17 +93,15 @@ class DashboardYearStat extends Model
             return;
         }
 
-        if (static::query()->exists()) {
-            return;
-        }
-
         foreach (static::defaults() as $year => $payload) {
-            static::query()->create([
-                'year' => $year,
-                'kpi' => $payload['kpi'],
-                'trend' => $payload['trend'],
-                'capaian' => $payload['capaian'],
-            ]);
+            static::query()->firstOrCreate(
+                ['year' => $year],
+                [
+                    'kpi'     => $payload['kpi'],
+                    'trend'   => $payload['trend'],
+                    'capaian' => $payload['capaian'],
+                ]
+            );
         }
     }
 }

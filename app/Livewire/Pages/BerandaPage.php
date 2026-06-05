@@ -140,7 +140,7 @@ class BerandaPage extends Component
                     'label' => (string) ($row['label'] ?? ''),
                     'countTarget' => $value,
                     'decimals' => $decimals,
-                    'value' => number_format($value, $decimals, '.', $decimals > 0 ? '' : '.'),
+                    'value' => number_format($value, $decimals, ',', '.'),
                     'boxClass' => $classes['boxClass'],
                     'valueClass' => $classes['valueClass'],
                 ];
@@ -180,6 +180,7 @@ class BerandaPage extends Component
                 'rangeLabel' => (string) data_get($trendOverride, 'rangeLabel', 'Tahun ' . $stat->year),
                 'yearTicks' => data_get($trendOverride, 'yearTicks', []),
                 'yTicks' => data_get($trendOverride, 'yTicks', []),
+                'tooltipData' => data_get($trendOverride, 'tooltipData', []),
             ],
             'capaian' => $capaian,
         ];
@@ -187,123 +188,249 @@ class BerandaPage extends Component
 
     private function buildTrendFromHistory(\Illuminate\Support\Collection $stats, int $activeYear, string $mode = 'year'): array
     {
-        $sortedStats = $stats->sortBy('year')->values();
+        if ($mode === 'year') {
+            return $this->buildTrendFromMonthly($stats, $activeYear);
+        }
 
-        $window = $mode === 'all'
-            ? $sortedStats
-            : $sortedStats
-            ->filter(fn(DashboardYearStat $s) => $s->year === $activeYear)
-            ->values();
+        return $this->buildTrendFromYearly($stats, $activeYear);
+    }
 
-        $years = $window->pluck('year')->map(fn($year) => (int) $year)->values()->all();
+    /**
+     * Mode "Per Tahun": gunakan data 12 bulan dari DashboardMonthlyStat.
+     * Hasilkan flat structure yang kompatibel dengan formatStatistikAktif (kunci lama).
+     *
+     * Setiap seri mendapat skala Y-sendiri sehingga pergerakan nilai yang kecil
+     * (IPK 3.15–3.62, Dosen 7–15) tetap terlihat naik-turun dengan jelas.
+     */
+    private function buildTrendFromMonthly(\Illuminate\Support\Collection $stats, int $activeYear): array
+    {
+        $statAktif = $stats->firstWhere('year', $activeYear);
+        $annualKpi = $statAktif?->kpi ?? [];
 
-        if ($window->count() === 1) {
-            $single = $window->first();
-            $singleYear = (int) data_get($single, 'year', $activeYear);
+        DashboardMonthlyStat::ensureYear($activeYear, $annualKpi);
 
-            $mahasiswa = (float) data_get($single, 'kpi.0.value', 0);
-            $ipk = (float) data_get($single, 'kpi.1.value', 0);
-            $publikasi = (float) data_get($single, 'kpi.3.value', 0);
-            $dosen = (float) data_get($single, 'kpi.2.value', 0);
-            $ringkasan = $this->buildKinerjaTahunanBerjalan($singleYear, $single->kpi ?? []);
-            $progressYtd = (float) collect(data_get($ringkasan, 'items', []))->avg('progress');
+        $rows = DashboardMonthlyStat::query()
+            ->where('year', $activeYear)
+            ->orderBy('month')
+            ->get();
 
-            $allValues = [$mahasiswa, $ipk, $publikasi, $dosen, $progressYtd];
-            $globalMin = min($allValues);
-            $globalMax = max($allValues);
-            if ($globalMin === $globalMax) {
-                $globalMax = $globalMin + 1;
+        if ($rows->isEmpty()) {
+            return $this->buildFallbackTrendFlat('year', $activeYear);
+        }
+
+        // Tahun historis → semua 12 bulan; tahun berjalan → s.d. bulan sekarang
+        $cutoff = $activeYear === (int) now()->format('Y') ? (int) now()->format('n') : 12;
+        $active = $rows->filter(fn($r) => $r->month <= $cutoff)->values();
+        if ($active->isEmpty()) {
+            $active = $rows->take(1)->values();
+        }
+
+        $mahasiswaValues = $active->map(fn($r) => (float) data_get($r->kpi, 'mahasiswa_aktif', 0))->values()->all();
+        $ipkValues       = $active->map(fn($r) => (float) data_get($r->kpi, 'ipk', 0))->values()->all();
+        $dosenValues     = $active->map(fn($r) => (float) data_get($r->kpi, 'dosen_tetap', 0))->values()->all();
+        $pubPerMonth     = $active->map(fn($r) => (float) data_get($r->kpi, 'publikasi', 0))->values()->all();
+        $months          = $active->map(fn($r) => (int) $r->month)->values()->all();
+
+        // Publikasi kumulatif — chart menggambar garis kumulatif
+        $publikasiValues = [];
+        $cum = 0.0;
+        foreach ($pubPerMonth as $v) { $cum += $v; $publikasiValues[] = $cum; }
+
+        // ── Skala per-seri agar setiap garis terlihat bergerak ──
+        $scaleWithPad = function (array $vals, float $relPad = 0.10, float $absMin = 1.0): array {
+            $min = (float) min($vals);
+            $max = (float) max($vals);
+            $pad = max($absMin, ($max - $min) * $relPad);
+            return [$min - $pad, $max + $pad];
+        };
+
+        [$mhsMin, $mhsMax]  = $scaleWithPad($mahasiswaValues);
+        [$ipkMin, $ipkMax]  = $scaleWithPad($ipkValues, 0.15, 0.05);
+        [$dosMin, $dosMax]  = $scaleWithPad($dosenValues);
+        [$pubMin, $pubMax]  = $scaleWithPad($publikasiValues);
+
+        // Progres per bulan — skala 0–100
+        $progressValues = $active->map(function ($r) use ($annualKpi): float {
+            $kpi = $r->kpi ?? [];
+            $progresses = [];
+            foreach ([['mahasiswa_aktif','0'],['ipk','1'],['dosen_tetap','2']] as [$key, $idx]) {
+                $target = (float) data_get($annualKpi, $idx . '.value', 0);
+                if ($target > 0) {
+                    $progresses[] = min(100, ((float) data_get($kpi, $key, 0) / $target) * 100);
+                }
             }
+            return count($progresses) > 0 ? round(array_sum($progresses) / count($progresses), 1) : 50.0;
+        })->values()->all();
 
-            [$mahasiswaPolyline, $mahasiswaLastY] = $this->buildPolylineFromValues([$mahasiswa, $mahasiswa], $globalMin, $globalMax);
-            [$ipkPolyline, $ipkLastY] = $this->buildPolylineFromValues([$ipk, $ipk], $globalMin, $globalMax);
-            [$publikasiPolyline, $publikasiLastY] = $this->buildPolylineFromValues([$publikasi, $publikasi], $globalMin, $globalMax);
-            [$dosenPolyline, $dosenLastY] = $this->buildPolylineFromValues([$dosen, $dosen], $globalMin, $globalMax);
-            [$progressPolyline, $progressLastY] = $this->buildPolylineFromValues([$progressYtd, $progressYtd], $globalMin, $globalMax);
-            $axis = $this->buildTrendAxis([$singleYear], $globalMin, $globalMax);
+        [$mahasiswaPolyline, $mahasiswaLastY] = $this->buildPolylineFromValues($mahasiswaValues, $mhsMin, $mhsMax);
+        [$ipkPolyline,       $ipkLastY]       = $this->buildPolylineFromValues($ipkValues,       $ipkMin, $ipkMax);
+        [$dosenPolyline,     $dosenLastY]      = $this->buildPolylineFromValues($dosenValues,     $dosMin, $dosMax);
+        [$publikasiPolyline, $publikasiLastY]  = $this->buildPolylineFromValues($publikasiValues, $pubMin, $pubMax);
+        [$progressPolyline,  $progressLastY]   = $this->buildPolylineFromValues($progressValues,  0.0, 105.0);
 
-            return [
-                'mahasiswa' => $mahasiswaPolyline,
-                'ipk' => $ipkPolyline,
-                'publikasi' => $publikasiPolyline,
-                'dosen' => $dosenPolyline,
-                'progressYtd' => $progressPolyline,
-                'lastX' => self::CHART_X_END,
-                'mahasiswaLastY' => $mahasiswaLastY,
-                'ipkLastY' => $ipkLastY,
-                'publikasiLastY' => $publikasiLastY,
-                'dosenLastY' => $dosenLastY,
-                'progressLastY' => $progressLastY,
-                'trendMode' => $mode,
-                'rangeLabel' => 'Per Tahun ' . $singleYear,
-                'yearTicks' => $axis['yearTicks'],
-                'yTicks' => $axis['yTicks'],
-            ];
-        }
-
-        if ($window->count() < 2) {
-            $fallback = [self::CHART_X_START, 103, 172, 241, self::CHART_X_END];
-            return [
-                'mahasiswa' => collect($fallback)->map(fn($x) => $x . ',74')->implode(' '),
-                'ipk' => collect($fallback)->map(fn($x) => $x . ',88')->implode(' '),
-                'publikasi' => collect($fallback)->map(fn($x) => $x . ',102')->implode(' '),
-                'dosen' => collect($fallback)->map(fn($x) => $x . ',114')->implode(' '),
-                'progressYtd' => collect($fallback)->map(fn($x) => $x . ',96')->implode(' '),
-                'lastX' => self::CHART_X_END,
-                'mahasiswaLastY' => 74,
-                'ipkLastY' => 88,
-                'publikasiLastY' => 102,
-                'dosenLastY' => 114,
-                'progressLastY' => 96,
-                'trendMode' => $mode,
-                'rangeLabel' => $mode === 'all' ? 'Semua Tahun' : 'Per Tahun ' . $activeYear,
-                'yearTicks' => $this->buildYearTicks([]),
-                'yTicks' => $this->buildValueTicks(0, 120),
-            ];
-        }
-
-        $mahasiswaValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '0.value', 0))->all();
-        $ipkValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '1.value', 0))->all();
-        $publikasiValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '3.value', 0))->all();
-        $dosenValues = $window->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '2.value', 0))->all();
-        $progressValues = $window
-            ->map(function (DashboardYearStat $s): float {
-                $ringkasan = $this->buildKinerjaTahunanBerjalan((int) $s->year, $s->kpi ?? []);
-                return (float) collect(data_get($ringkasan, 'items', []))->avg('progress');
-            })
-            ->all();
-
-        $allValues = array_merge($mahasiswaValues, $ipkValues, $publikasiValues, $dosenValues, $progressValues);
-        $globalMin = min($allValues);
-        $globalMax = max($allValues);
-
-        [$mahasiswaPolyline, $mahasiswaLastY] = $this->buildPolylineFromValues($mahasiswaValues, $globalMin, $globalMax);
-        [$ipkPolyline, $ipkLastY] = $this->buildPolylineFromValues($ipkValues, $globalMin, $globalMax);
-        [$publikasiPolyline, $publikasiLastY] = $this->buildPolylineFromValues($publikasiValues, $globalMin, $globalMax);
-        [$dosenPolyline, $dosenLastY] = $this->buildPolylineFromValues($dosenValues, $globalMin, $globalMax);
-        [$progressPolyline, $progressLastY] = $this->buildPolylineFromValues($progressValues, $globalMin, $globalMax);
-        $axis = $this->buildTrendAxis($years, $globalMin, $globalMax);
-
-        $firstYear = (int) ($years[0] ?? $activeYear);
-        $lastYear = (int) ($years[count($years) - 1] ?? $activeYear);
+        $monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        $xTicks = $this->buildMonthTicksFlat($months, $monthNames);
+        // Y-ticks derived from mahasiswa scale (dominant series in the chart)
+        $yTicks = $this->buildValueTicks($mhsMin, $mhsMax);
 
         return [
-            'mahasiswa' => $mahasiswaPolyline,
-            'ipk' => $ipkPolyline,
-            'publikasi' => $publikasiPolyline,
-            'dosen' => $dosenPolyline,
-            'progressYtd' => $progressPolyline,
-            'lastX' => self::CHART_X_END,
+            'mahasiswa'      => $mahasiswaPolyline,
+            'ipk'            => $ipkPolyline,
+            'publikasi'      => $publikasiPolyline,
+            'dosen'          => $dosenPolyline,
+            'progressYtd'    => $progressPolyline,
+            'lastX'          => self::CHART_X_END,
             'mahasiswaLastY' => $mahasiswaLastY,
-            'ipkLastY' => $ipkLastY,
+            'ipkLastY'       => $ipkLastY,
             'publikasiLastY' => $publikasiLastY,
-            'dosenLastY' => $dosenLastY,
-            'progressLastY' => $progressLastY,
-            'trendMode' => $mode,
-            'rangeLabel' => $mode === 'all' ? ('Semua Tahun (' . $firstYear . ' - ' . $lastYear . ')') : ('Per Tahun ' . $lastYear),
-            'yearTicks' => $axis['yearTicks'],
-            'yTicks' => $axis['yTicks'],
+            'dosenLastY'     => $dosenLastY,
+            'progressLastY'  => $progressLastY,
+            'trendMode'      => 'year',
+            'rangeLabel'     => 'Per Bulan — Tahun ' . $activeYear,
+            'yearTicks'      => $xTicks,
+            'yTicks'         => $yTicks,
+            // Tooltip: publikasi = kumulatif (sesuai dengan garis yang digambar)
+            'tooltipData'    => $this->buildTooltipData(
+                $months, $mahasiswaValues, $ipkValues, $dosenValues,
+                $publikasiValues,  // kumulatif — sinkron dengan garis
+                $progressValues, true,
+            ),
         ];
+    }
+
+    /**
+     * Mode "Semua Tahun": 1 titik per tahun (flat structure lama).
+     */
+    private function buildTrendFromYearly(\Illuminate\Support\Collection $stats, int $activeYear): array
+    {
+        $sorted = $stats->sortBy('year')->values();
+
+        if ($sorted->isEmpty()) {
+            return $this->buildFallbackTrendFlat('all', $activeYear);
+        }
+
+        if ($sorted->count() === 1) {
+            $sorted = collect([$sorted->first(), $sorted->first()]);
+        }
+
+        $years           = $sorted->pluck('year')->map(fn($y) => (int) $y)->values()->all();
+        $mahasiswaValues = $sorted->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '0.value', 0))->values()->all();
+        $ipkValues       = $sorted->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '1.value', 0))->values()->all();
+        $dosenValues     = $sorted->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '2.value', 0))->values()->all();
+        $publikasiValues = $sorted->map(fn(DashboardYearStat $s) => (float) data_get($s->kpi, '3.value', 0))->values()->all();
+        $progressValues  = $sorted->map(function (DashboardYearStat $s): float {
+            $ringkasan = $this->buildKinerjaTahunanBerjalan((int) $s->year, $s->kpi ?? []);
+            return (float) collect(data_get($ringkasan, 'items', []))->avg('progress');
+        })->values()->all();
+
+        // Per-series scale so small-range indicators (IPK, Dosen) still show movement
+        $scaleWithPad = function (array $vals, float $relPad = 0.10, float $absMin = 1.0): array {
+            $min = (float) min($vals);
+            $max = (float) max($vals);
+            $pad = max($absMin, ($max - $min) * $relPad);
+            return [$min - $pad, $max + $pad];
+        };
+
+        [$mhsMin, $mhsMax]  = $scaleWithPad($mahasiswaValues);
+        [$ipkMin, $ipkMax]  = $scaleWithPad($ipkValues, 0.15, 0.05);
+        [$dosMin, $dosMax]  = $scaleWithPad($dosenValues);
+        [$pubMin, $pubMax]  = $scaleWithPad($publikasiValues);
+
+        [$mahasiswaPolyline, $mahasiswaLastY] = $this->buildPolylineFromValues($mahasiswaValues, $mhsMin, $mhsMax);
+        [$ipkPolyline,       $ipkLastY]       = $this->buildPolylineFromValues($ipkValues,       $ipkMin, $ipkMax);
+        [$dosenPolyline,     $dosenLastY]      = $this->buildPolylineFromValues($dosenValues,     $dosMin, $dosMax);
+        [$publikasiPolyline, $publikasiLastY]  = $this->buildPolylineFromValues($publikasiValues, $pubMin, $pubMax);
+        [$progressPolyline,  $progressLastY]   = $this->buildPolylineFromValues($progressValues,  0.0, 105.0);
+
+        $firstYear = (int) ($years[0] ?? $activeYear);
+        $lastYear  = (int) ($years[count($years) - 1] ?? $activeYear);
+        $axis = $this->buildTrendAxis($years, $mhsMin, $mhsMax);
+
+        return [
+            'mahasiswa'      => $mahasiswaPolyline,
+            'ipk'            => $ipkPolyline,
+            'publikasi'      => $publikasiPolyline,
+            'dosen'          => $dosenPolyline,
+            'progressYtd'    => $progressPolyline,
+            'lastX'          => self::CHART_X_END,
+            'mahasiswaLastY' => $mahasiswaLastY,
+            'ipkLastY'       => $ipkLastY,
+            'publikasiLastY' => $publikasiLastY,
+            'dosenLastY'     => $dosenLastY,
+            'progressLastY'  => $progressLastY,
+            'trendMode'      => 'all',
+            'rangeLabel'     => count($years) > 1 ? 'Semua Tahun (' . $firstYear . ' – ' . $lastYear . ')' : 'Per Tahun ' . $firstYear,
+            'yearTicks'      => $axis['yearTicks'],
+            'yTicks'         => $axis['yTicks'],
+            'tooltipData'    => $this->buildTooltipData($years, $mahasiswaValues, $ipkValues, $dosenValues, $publikasiValues, $progressValues, false),
+        ];
+    }
+
+    private function buildFallbackTrendFlat(string $mode, int $activeYear): array
+    {
+        $midY = (self::CHART_Y_TOP + self::CHART_Y_BOTTOM) / 2;
+        $flat = self::CHART_X_START . ',' . $midY . ' ' . self::CHART_X_END . ',' . $midY;
+        return [
+            'mahasiswa' => $flat, 'ipk' => $flat, 'publikasi' => $flat, 'dosen' => $flat, 'progressYtd' => $flat,
+            'lastX' => self::CHART_X_END,
+            'mahasiswaLastY' => $midY, 'ipkLastY' => $midY, 'publikasiLastY' => $midY,
+            'dosenLastY' => $midY, 'progressLastY' => $midY,
+            'trendMode' => $mode,
+            'rangeLabel' => $mode === 'all' ? 'Semua Tahun' : 'Per Tahun ' . $activeYear,
+            'yearTicks' => [], 'yTicks' => [], 'tooltipData' => [],
+        ];
+    }
+
+    /** Build tooltip data as JSON-safe array of point info */
+    private function buildTooltipData(
+        array $xLabels,
+        array $mahasiswaValues,
+        array $ipkValues,
+        array $dosenValues,
+        array $publikasiValues,
+        array $progressValues,
+        bool  $isMonthly,
+    ): array {
+        $monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        $total = count($xLabels);
+        $data = [];
+
+        for ($i = 0; $i < $total; $i++) {
+            $label = $isMonthly
+                ? ($monthNames[($xLabels[$i] - 1)] ?? '-')
+                : (string) $xLabels[$i];
+
+            $data[] = [
+                'label'     => $label,
+                'mahasiswa' => $mahasiswaValues[$i] ?? 0,
+                'ipk'       => $ipkValues[$i] ?? 0,
+                'dosen'     => $dosenValues[$i] ?? 0,
+                'publikasi' => $publikasiValues[$i] ?? 0,
+                'progress'  => round($progressValues[$i] ?? 0, 1),
+            ];
+        }
+
+        return $data;
+    }
+
+    private function buildMonthTicksFlat(array $months, array $names): array
+    {
+        $total = count($months);
+        if ($total === 0) return [];
+
+        $step = $total > 1 ? (self::CHART_X_END - self::CHART_X_START) / ($total - 1) : 0;
+        $maxLabels = 6;
+        $indexes = $total <= $maxLabels
+            ? range(0, $total - 1)
+            : collect(range(0, $maxLabels - 1))
+                ->map(fn(int $i) => (int) round($i * ($total - 1) / ($maxLabels - 1)))
+                ->unique()->values()->all();
+
+        return collect($indexes)->map(fn(int $idx) => [
+            'x'     => round(self::CHART_X_START + ($idx * $step), 1),
+            'label' => $names[($months[$idx] - 1)] ?? '-',
+            'year'  => $names[($months[$idx] - 1)] ?? '-', // backward-compat alias
+        ])->all();
     }
 
     private function buildTrendAxis(array $years, float $minValue, float $maxValue): array
@@ -453,7 +580,6 @@ class BerandaPage extends Component
                 $classes = self::PROGRAM_STYLE_MAP[$item->style_key] ?? self::PROGRAM_STYLE_MAP['blue'];
 
                 return [
-                    'statusKey' => in_array($item->execution_status, ['terlaksana', 'belum_terlaksana'], true) ? $item->execution_status : 'belum_terlaksana',
                     'detail_url' => route('program-agenda.detail', [
                         'id' => $item->id,
                         'slug' => \Illuminate\Support\Str::slug($item->title),
@@ -490,10 +616,6 @@ class BerandaPage extends Component
 
     private function buildKinerjaTahunanBerjalan(int $year, array $annualKpi): array
     {
-        if (!Schema::hasTable('dashboard_monthly_stats')) {
-            return DashboardMonthlyStat::summarizeYear($year, $annualKpi);
-        }
-
         DashboardMonthlyStat::ensureYear($year, $annualKpi);
         return DashboardMonthlyStat::summarizeYear($year, $annualKpi);
     }

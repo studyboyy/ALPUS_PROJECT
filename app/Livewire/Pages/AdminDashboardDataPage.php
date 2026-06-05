@@ -20,10 +20,6 @@ class AdminDashboardDataPage extends Component
         'ipk' => 0,
         'dosen_tetap' => 0,
         'publikasi' => 0,
-        'trend_mahasiswa' => '',
-        'trend_ipk' => '',
-        'trend_mahasiswa_last_y' => 0,
-        'trend_ipk_last_y' => 0,
         'capaian_mahasiswa' => 0,
         'capaian_lulusan' => 0,
         'capaian_publikasi' => 0,
@@ -64,20 +60,24 @@ class AdminDashboardDataPage extends Component
             [
                 'kpi' => [
                     ['label' => 'Mahasiswa Aktif', 'value' => 0, 'decimals' => 0],
-                    ['label' => 'IPK Rata-rata', 'value' => 0, 'decimals' => 2],
-                    ['label' => 'Dosen Tetap', 'value' => 0, 'decimals' => 0],
-                    ['label' => 'Publikasi', 'value' => 0, 'decimals' => 0],
+                    ['label' => 'IPK Rata-rata',   'value' => 0, 'decimals' => 2],
+                    ['label' => 'Dosen Tetap',      'value' => 0, 'decimals' => 0],
+                    ['label' => 'Publikasi',        'value' => 0, 'decimals' => 0],
                 ],
                 'trend' => [
-                    'mahasiswa' => '',
-                    'ipk' => '',
+                    'mahasiswa'      => '',
+                    'ipk'            => '',
+                    'dosen'          => '',
+                    'publikasi'      => '',
                     'mahasiswaLastY' => 90,
-                    'ipkLastY' => 90,
+                    'ipkLastY'       => 90,
+                    'dosenLastY'     => 90,
+                    'publikasiLastY' => 90,
                 ],
                 'capaian' => [
-                    ['label' => 'Mahasiswa Aktif', 'percent' => 0],
-                    ['label' => 'Lulusan Tepat Waktu', 'percent' => 0],
-                    ['label' => 'Publikasi Ilmiah', 'percent' => 0],
+                    ['label' => 'Mahasiswa Aktif',            'percent' => 0],
+                    ['label' => 'Lulusan Tepat Waktu',        'percent' => 0],
+                    ['label' => 'Publikasi Ilmiah',           'percent' => 0],
                     ['label' => 'Kegiatan Dosen & Mahasiswa', 'percent' => 0],
                 ],
             ]
@@ -125,20 +125,14 @@ class AdminDashboardDataPage extends Component
             [
                 'kpi' => [
                     ['label' => 'Mahasiswa Aktif', 'value' => (float) $this->statistik['mahasiswa_aktif'], 'decimals' => 0],
-                    ['label' => 'IPK Rata-rata', 'value' => (float) $this->statistik['ipk'], 'decimals' => 2],
-                    ['label' => 'Dosen Tetap', 'value' => (float) $this->statistik['dosen_tetap'], 'decimals' => 0],
-                    ['label' => 'Publikasi', 'value' => (float) $this->statistik['publikasi'], 'decimals' => 0],
-                ],
-                'trend' => [
-                    'mahasiswa' => '',
-                    'ipk' => '',
-                    'mahasiswaLastY' => 90,
-                    'ipkLastY' => 90,
+                    ['label' => 'IPK Rata-rata',   'value' => (float) $this->statistik['ipk'],             'decimals' => 2],
+                    ['label' => 'Dosen Tetap',      'value' => (float) $this->statistik['dosen_tetap'],     'decimals' => 0],
+                    ['label' => 'Publikasi',        'value' => (float) $this->statistik['publikasi'],       'decimals' => 0],
                 ],
                 'capaian' => [
-                    ['label' => 'Mahasiswa Aktif', 'percent' => (float) $this->statistik['capaian_mahasiswa']],
-                    ['label' => 'Lulusan Tepat Waktu', 'percent' => (float) $this->statistik['capaian_lulusan']],
-                    ['label' => 'Publikasi Ilmiah', 'percent' => (float) $this->statistik['capaian_publikasi']],
+                    ['label' => 'Mahasiswa Aktif',            'percent' => (float) $this->statistik['capaian_mahasiswa']],
+                    ['label' => 'Lulusan Tepat Waktu',        'percent' => (float) $this->statistik['capaian_lulusan']],
+                    ['label' => 'Publikasi Ilmiah',           'percent' => (float) $this->statistik['capaian_publikasi']],
                     ['label' => 'Kegiatan Dosen & Mahasiswa', 'percent' => (float) $this->statistik['capaian_kegiatan']],
                 ],
             ]
@@ -158,20 +152,29 @@ class AdminDashboardDataPage extends Component
             ->get(['id', 'year', 'kpi', 'trend']);
 
         foreach ($allStats as $index => $stat) {
+            // Gunakan window 5 tahun terakhir untuk membangun polyline
             $window = $allStats->slice(max(0, $index - 4), min(5, $index + 1));
 
-            $mahasiswaValues = $window->map(fn($row) => (float) data_get($row->kpi, '0.value', 0))->all();
-            $ipkValues = $window->map(fn($row) => (float) data_get($row->kpi, '1.value', 0))->all();
+            $mahasiswaValues = $window->map(fn($row) => (float) data_get($row->kpi, '0.value', 0))->values()->all();
+            $ipkValues       = $window->map(fn($row) => (float) data_get($row->kpi, '1.value', 0))->values()->all();
+            $dosenValues     = $window->map(fn($row) => (float) data_get($row->kpi, '2.value', 0))->values()->all();
+            $publikasiValues = $window->map(fn($row) => (float) data_get($row->kpi, '3.value', 0))->values()->all();
 
             [$mahasiswaPolyline, $mahasiswaLastY] = $this->buildPolyline($mahasiswaValues);
-            [$ipkPolyline, $ipkLastY] = $this->buildPolyline($ipkValues);
+            [$ipkPolyline,       $ipkLastY]       = $this->buildPolyline($ipkValues);
+            [$dosenPolyline,     $dosenLastY]      = $this->buildPolyline($dosenValues);
+            [$publikasiPolyline, $publikasiLastY]  = $this->buildPolyline($publikasiValues);
 
             DashboardYearStat::query()->whereKey(data_get($stat, 'id'))->update([
                 'trend' => [
-                    'mahasiswa' => $mahasiswaPolyline,
-                    'ipk' => $ipkPolyline,
+                    'mahasiswa'      => $mahasiswaPolyline,
+                    'ipk'            => $ipkPolyline,
+                    'dosen'          => $dosenPolyline,
+                    'publikasi'      => $publikasiPolyline,
                     'mahasiswaLastY' => $mahasiswaLastY,
-                    'ipkLastY' => $ipkLastY,
+                    'ipkLastY'       => $ipkLastY,
+                    'dosenLastY'     => $dosenLastY,
+                    'publikasiLastY' => $publikasiLastY,
                 ],
             ]);
         }
@@ -224,35 +227,27 @@ class AdminDashboardDataPage extends Component
         $stat = DashboardYearStat::query()->where('year', $this->tahunDipilih)->first();
         if (!$stat) {
             $this->statistik = [
-                'mahasiswa_aktif' => 0,
-                'ipk' => 0,
-                'dosen_tetap' => 0,
-                'publikasi' => 0,
-                'trend_mahasiswa' => '',
-                'trend_ipk' => '',
-                'trend_mahasiswa_last_y' => 0,
-                'trend_ipk_last_y' => 0,
+                'mahasiswa_aktif'   => 0,
+                'ipk'               => 0,
+                'dosen_tetap'       => 0,
+                'publikasi'         => 0,
                 'capaian_mahasiswa' => 0,
-                'capaian_lulusan' => 0,
+                'capaian_lulusan'   => 0,
                 'capaian_publikasi' => 0,
-                'capaian_kegiatan' => 0,
+                'capaian_kegiatan'  => 0,
             ];
             return;
         }
 
         $this->statistik = [
             'mahasiswa_aktif' => (float) data_get($stat->kpi, '0.value', 0),
-            'ipk' => (float) data_get($stat->kpi, '1.value', 0),
-            'dosen_tetap' => (float) data_get($stat->kpi, '2.value', 0),
-            'publikasi' => (float) data_get($stat->kpi, '3.value', 0),
-            'trend_mahasiswa' => (string) data_get($stat->trend, 'mahasiswa', ''),
-            'trend_ipk' => (string) data_get($stat->trend, 'ipk', ''),
-            'trend_mahasiswa_last_y' => (float) data_get($stat->trend, 'mahasiswaLastY', 0),
-            'trend_ipk_last_y' => (float) data_get($stat->trend, 'ipkLastY', 0),
+            'ipk'             => (float) data_get($stat->kpi, '1.value', 0),
+            'dosen_tetap'     => (float) data_get($stat->kpi, '2.value', 0),
+            'publikasi'       => (float) data_get($stat->kpi, '3.value', 0),
             'capaian_mahasiswa' => (float) data_get($stat->capaian, '0.percent', 0),
-            'capaian_lulusan' => (float) data_get($stat->capaian, '1.percent', 0),
+            'capaian_lulusan'   => (float) data_get($stat->capaian, '1.percent', 0),
             'capaian_publikasi' => (float) data_get($stat->capaian, '2.percent', 0),
-            'capaian_kegiatan' => (float) data_get($stat->capaian, '3.percent', 0),
+            'capaian_kegiatan'  => (float) data_get($stat->capaian, '3.percent', 0),
         ];
     }
 

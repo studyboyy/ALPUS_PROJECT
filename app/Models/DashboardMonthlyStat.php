@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
 class DashboardMonthlyStat extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'year',
         'month',
@@ -72,9 +74,9 @@ class DashboardMonthlyStat extends Model
         $targetPublikasi = (float) data_get($annualKpi, '3.value', 0);
 
         $items = [
-            static::buildItem('Mahasiswa Aktif (YTD)', $realisasiMahasiswa, $targetMahasiswa, $realisasiMahasiswa, 0),
-            static::buildItem('IPK Rata-rata (YTD)', $realisasiIpk, $targetIpk, $realisasiIpk, 2),
-            static::buildItem('Dosen Tetap (YTD)', $realisasiDosen, $targetDosen, $realisasiDosen, 0),
+            static::buildItem('Mahasiswa Aktif (YTD)', $realisasiMahasiswa, $targetMahasiswa, $targetMahasiswa, 0),
+            static::buildItem('IPK Rata-rata (YTD)', $realisasiIpk, $targetIpk, $targetIpk, 2),
+            static::buildItem('Dosen Tetap (YTD)', $realisasiDosen, $targetDosen, $targetDosen, 0),
             static::buildItem('Publikasi (YTD)', $realisasiPublikasi, $targetPublikasi, ($realisasiPublikasi / $monthCount) * 12, 0),
         ];
 
@@ -132,17 +134,23 @@ class DashboardMonthlyStat extends Model
     private static function buildDefaultMonthlyKpi(int $month, array $annualKpi): array
     {
         $targetMahasiswa = (float) data_get($annualKpi, '0.value', 0);
-        $targetIpk = (float) data_get($annualKpi, '1.value', 0);
-        $targetDosen = (float) data_get($annualKpi, '2.value', 0);
+        $targetIpk       = (float) data_get($annualKpi, '1.value', 0);
+        $targetDosen     = (float) data_get($annualKpi, '2.value', 0);
         $targetPublikasi = (float) data_get($annualKpi, '3.value', 0);
 
-        $ratio = $month / 12;
+        // Kurva musiman akademik — indeks 0=Jan, 11=Des
+        $mahasiswaCurve = [0.82, 0.88, 0.91, 0.90, 0.87, 0.84, 0.83, 0.88, 0.94, 0.96, 0.98, 1.00];
+        $ipkOffset      = [-0.14, -0.11, -0.08, -0.05, -0.03, -0.01, -0.09, -0.07, -0.05, -0.03, -0.01, 0.00];
+        $dosenCurve     = [0.87, 0.89, 0.91, 0.92, 0.93, 0.94, 0.94, 0.95, 0.96, 0.97, 0.98, 1.00];
+        $pubWeights     = [0.05, 0.06, 0.09, 0.10, 0.10, 0.11, 0.07, 0.07, 0.09, 0.10, 0.09, 0.07];
+
+        $idx = $month - 1;
 
         return [
-            'mahasiswa_aktif' => (float) round($targetMahasiswa * (0.78 + (0.22 * $ratio))),
-            'ipk' => (float) round(max(0, $targetIpk - 0.12 + (0.12 * $ratio)), 2),
-            'dosen_tetap' => (float) round($targetDosen * (0.84 + (0.16 * $ratio))),
-            'publikasi' => (float) round(($targetPublikasi * $ratio) / max(1, $month), 0),
+            'mahasiswa_aktif' => max(1, (int) round($targetMahasiswa * $mahasiswaCurve[$idx])),
+            'ipk'             => (float) round(max(2.80, $targetIpk + $ipkOffset[$idx]), 2),
+            'dosen_tetap'     => max(1, (int) round($targetDosen * $dosenCurve[$idx])),
+            'publikasi'       => max(1, (int) round($targetPublikasi * $pubWeights[$idx])),
         ];
     }
 

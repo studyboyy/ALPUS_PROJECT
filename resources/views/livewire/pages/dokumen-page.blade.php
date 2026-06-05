@@ -13,9 +13,7 @@
             <div class="flex items-center overflow-hidden rounded-full border border-(--line) bg-white">
                 <button type="button" wire:click="pilihKategori('{{ $kategori }}')"
                     class="px-4 py-2 text-xs font-semibold {{ $kategoriDipilih === $kategori ? 'bg-(--accent) text-white' : 'text-slate-700' }}">{{ $kategori }}</button>
-                <a wire:navigate.hover
-                    href="{{ route('dokumen.category', ['kategori' => $kategoriSlugMap[$kategori] ?? Illuminate\Support\Str::slug($kategori)]) }}"
-                    class="border-l border-(--line) px-3 py-2 text-[11px] font-semibold text-slate-500 hover:bg-slate-50">URL</a>
+                
                 <a href="{{ route('dokumen.pdf', ['kategori' => $kategoriSlugMap[$kategori] ?? Illuminate\Support\Str::slug($kategori)]) }}"
                     class="border-l border-(--line) px-3 py-2 text-[11px] font-semibold text-slate-500 hover:bg-slate-50">PDF</a>
             </div>

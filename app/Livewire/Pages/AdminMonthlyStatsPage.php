@@ -83,26 +83,29 @@ class AdminMonthlyStatsPage extends Component
 
     public function simpanBulanan(): void
     {
-        foreach ($this->bulanan as $index => $row) {
-            $this->validate([
-                "bulanan.$index.month" => ['required', 'integer', 'between:1,12'],
-                "bulanan.$index.mahasiswa_aktif" => ['required', 'numeric', 'min:0'],
-                "bulanan.$index.ipk" => ['required', 'numeric', 'between:0,4'],
-                "bulanan.$index.dosen_tetap" => ['required', 'numeric', 'min:0'],
-                "bulanan.$index.publikasi" => ['required', 'numeric', 'min:0'],
-            ]);
+        // Validasi semua baris sekaligus — lebih efisien dari validasi per-baris
+        $rules = [];
+        foreach (array_keys($this->bulanan) as $index) {
+            $rules["bulanan.$index.month"]          = ['required', 'integer', 'between:1,12'];
+            $rules["bulanan.$index.mahasiswa_aktif"] = ['required', 'numeric', 'min:1'];
+            $rules["bulanan.$index.ipk"]            = ['required', 'numeric', 'between:0,4'];
+            $rules["bulanan.$index.dosen_tetap"]    = ['required', 'numeric', 'min:1'];
+            $rules["bulanan.$index.publikasi"]      = ['required', 'numeric', 'min:1'];
+        }
+        $this->validate($rules);
 
+        foreach ($this->bulanan as $row) {
             DashboardMonthlyStat::query()->updateOrCreate(
                 [
-                    'year' => $this->tahunDipilih,
+                    'year'  => $this->tahunDipilih,
                     'month' => (int) data_get($row, 'month'),
                 ],
                 [
                     'kpi' => [
                         'mahasiswa_aktif' => (float) data_get($row, 'mahasiswa_aktif', 0),
-                        'ipk' => (float) data_get($row, 'ipk', 0),
-                        'dosen_tetap' => (float) data_get($row, 'dosen_tetap', 0),
-                        'publikasi' => (float) data_get($row, 'publikasi', 0),
+                        'ipk'             => (float) data_get($row, 'ipk', 0),
+                        'dosen_tetap'     => (float) data_get($row, 'dosen_tetap', 0),
+                        'publikasi'       => (float) data_get($row, 'publikasi', 0),
                     ],
                 ]
             );
@@ -116,7 +119,8 @@ class AdminMonthlyStatsPage extends Component
     {
         $years = DashboardYearStat::query()->orderByDesc('year')->pluck('year')->all();
         return view('livewire.pages.admin-monthly-stats-page', [
-            'daftarTahun' => $years,
+            'daftarTahun'   => $years,
+            'tahunDipilih'  => $this->tahunDipilih,
         ]);
     }
 }
