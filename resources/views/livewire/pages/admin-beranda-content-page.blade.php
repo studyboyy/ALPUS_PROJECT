@@ -268,18 +268,80 @@
                 @endif
 
                 <div>
-                    <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Embed URL Google Maps</label>
-                    <textarea wire:model.defer="contactMapEmbedUrl" rows="2" placeholder="https://maps.google.com/maps?...&output=embed"
-                        class="w-full resize-none rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm font-mono shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
-                </div>
+                    <label class="block text-xs font-semibold text-zinc-600 mb-1.5">
+                        Lokasi Peta
+                    </label>
 
-                {{-- Map preview --}}
-                @if ($contactMapEmbedUrl)
-                    <div class="overflow-hidden rounded-xl border border-zinc-200">
-                        <iframe title="Preview Peta" class="h-48 w-full" src="{{ $contactMapEmbedUrl }}"
-                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    {{-- wire:model handles saving; Alpine reads the DOM value just for preview --}}
+                    <div x-data="{
+                            embedUrl: '',
+                            debounceTimer: null,
+
+                            buildEmbed(val) {
+                                val = (val || '').trim();
+                                if (!val) { this.embedUrl = ''; return; }
+                                if (val.includes('output=embed') || val.includes('/maps/embed')) {
+                                    this.embedUrl = val; return;
+                                }
+                                if (val.startsWith('http')) {
+                                    try {
+                                        const u = new URL(val);
+                                        const q = u.searchParams.get('q') || u.searchParams.get('query');
+                                        this.embedUrl = q
+                                            ? 'https://maps.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed'
+                                            : 'https://maps.google.com/maps?q=' + encodeURIComponent(val) + '&output=embed';
+                                    } catch(e) {
+                                        this.embedUrl = 'https://maps.google.com/maps?q=' + encodeURIComponent(val) + '&output=embed';
+                                    }
+                                    return;
+                                }
+                                this.embedUrl = 'https://maps.google.com/maps?q=' + encodeURIComponent(val) + '&output=embed';
+                            },
+
+                            onInput(e) {
+                                clearTimeout(this.debounceTimer);
+                                this.debounceTimer = setTimeout(() => this.buildEmbed(e.target.value), 700);
+                            },
+
+                            init() {
+                                const el = this.$refs.mapInput;
+                                if (el) this.buildEmbed(el.value);
+                            }
+                        }"
+                        x-init="init()">
+
+                        {{-- Input: wire:model.defer sends value to Livewire on save; Alpine reads DOM for preview --}}
+                        <div class="relative">
+                            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </span>
+                            <input
+                                x-ref="mapInput"
+                                wire:model.defer="contactMapQuery"
+                                @input="onInput($event)"
+                                type="text"
+                                placeholder="Ketik nama kampus, koordinat, atau tempel link Google Maps…"
+                                class="w-full rounded-xl border border-zinc-300 bg-white py-2.5 pl-9 pr-3.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                        </div>
+
+                        <p class="mt-1.5 text-[11px] text-zinc-400 leading-relaxed">
+                            Contoh: <code class="rounded bg-zinc-100 px-1 py-0.5 font-mono">STMIK JABAR</code>&nbsp;·&nbsp;
+                            <code class="rounded bg-zinc-100 px-1 py-0.5 font-mono">-6.9377,107.6772</code>&nbsp;·&nbsp;
+                            atau link <code class="rounded bg-zinc-100 px-1 py-0.5 font-mono">https://maps.app.goo.gl/…</code>
+                        </p>
+
+                        {{-- Live preview --}}
+                        <div x-show="embedUrl !== ''" class="mt-3 overflow-hidden rounded-xl border border-zinc-200 shadow-sm" style="display:none">
+                            <iframe :src="embedUrl" title="Preview Peta"
+                                class="h-52 w-full border-0"
+                                loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                                allowfullscreen></iframe>
+                        </div>
                     </div>
-                @endif
+                </div>
 
                 <div class="flex justify-end pt-1">
                     <button type="submit"

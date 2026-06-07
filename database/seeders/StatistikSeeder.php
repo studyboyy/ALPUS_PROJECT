@@ -383,7 +383,7 @@ class StatistikSeeder extends Seeder
                 ['label' => 'YouTube',   'url' => 'https://youtube.com/@prodi'],
                 ['label' => 'LinkedIn',  'url' => 'https://linkedin.com/company/prodi'],
             ],
-            'contact_map_embed_url' => 'https://maps.google.com/maps?q=jakarta&t=&z=13&ie=UTF8&iwloc=&output=embed',
+            'contact_map_embed_url' => 'https://maps.google.com/maps?q=STMIK+JABAR&output=embed',
             'kaprodi_name'          => 'Dr. Asep George, S.Pd.I, S.Kom',
             'kaprodi_title'         => 'Kepala Program Studi',
             'kaprodi_quote'         => 'Kami berkomitmen menghasilkan lulusan yang kompeten, berkarakter, dan berdaya saing global.',

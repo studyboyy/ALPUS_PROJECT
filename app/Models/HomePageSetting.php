@@ -107,7 +107,7 @@ class HomePageSetting extends Model
                     'url' => 'https://linkedin.com/company/prodi',
                 ],
             ],
-            'contact_map_embed_url' => 'https://maps.google.com/maps?q=universitas%20indonesia&t=&z=13&ie=UTF8&iwloc=&output=embed',
+            'contact_map_embed_url' => 'https://maps.google.com/maps?q=STMIK+JABAR&output=embed',
             'kaprodi_name' => 'Dr. Nama Kepala Prodi',
             'kaprodi_title' => 'Kepala Program Studi',
             'kaprodi_quote' => 'Laporan ini tidak hanya memotret capaian, tetapi menjadi kompas evaluasi berkelanjutan untuk membangun budaya mutu, inovasi, dan kolaborasi di Program Studi kami.',
@@ -217,8 +217,8 @@ class HomePageSetting extends Model
             ->values();
 
         if (Schema::hasTable('home_page_settings') && $row->gallery_items !== $galleryItemsPayload->all()) {
-            $row->gallery_items = $galleryItemsPayload->all();
-            $row->save();
+            // NOTE: removed auto-save — current() must be read-only to avoid overwriting user changes
+            // Gallery normalisation happens only on explicit admin save
         }
 
         $heroItems = collect($row->hero_items ?? static::defaults()['hero_items'])
@@ -265,7 +265,10 @@ class HomePageSetting extends Model
             'contact_address' => (string) ($row->contact_address ?: static::defaults()['contact_address']),
             'contact_socials' => $socialLinks->pluck('label')->implode(' · '),
             'contact_social_links' => $socialLinks->all(),
-            'contact_map_embed_url' => (string) ($row->contact_map_embed_url ?: static::defaults()['contact_map_embed_url']),
+            // Use raw DB value — never fall back to default (to avoid overwriting user's saved URL)
+            'contact_map_embed_url' => $row->contact_map_embed_url !== null
+                ? (string) $row->contact_map_embed_url
+                : static::defaults()['contact_map_embed_url'],
             'kaprodi_name' => (string) ($row->kaprodi_name ?: static::defaults()['kaprodi_name']),
             'kaprodi_title' => (string) ($row->kaprodi_title ?: static::defaults()['kaprodi_title']),
             'kaprodi_quote' => (string) ($row->kaprodi_quote ?: static::defaults()['kaprodi_quote']),

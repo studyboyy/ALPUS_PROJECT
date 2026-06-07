@@ -22,7 +22,8 @@ class AdminBerandaContentPage extends Component
     public string $contactPhone = '';
     public string $contactWhatsapp = '';
     public string $contactAddress = '';
-    public string $contactMapEmbedUrl = '';
+    public string $contactMapQuery = '';   // nama tempat / koordinat, lebih mudah dari URL embed
+    public string $contactMapEmbedUrl = ''; // disimpan juga untuk backward compat tampilan
     public array $contactSocialLinks = [];
     public string $kaprodiName = '';
     public string $kaprodiTitle = '';
@@ -250,20 +251,20 @@ class AdminBerandaContentPage extends Component
     public function simpanKontak(): void
     {
         $this->validate([
-            'contactEmail' => ['required', 'email', 'max:120'],
-            'contactPhone' => ['nullable', 'string', 'max:50'],
+            'contactEmail'    => ['required', 'email', 'max:120'],
+            'contactPhone'    => ['nullable', 'string', 'max:50'],
             'contactWhatsapp' => ['nullable', 'string', 'max:50'],
-            'contactAddress' => ['required', 'string', 'max:500'],
-            'contactMapEmbedUrl' => ['required', 'url', 'max:2000'],
-            'contactSocialLinks' => ['required', 'array', 'min:1'],
+            'contactAddress'  => ['required', 'string', 'max:500'],
+            'contactMapQuery' => ['nullable', 'string', 'max:500'],
+            'contactSocialLinks'         => ['required', 'array', 'min:1'],
             'contactSocialLinks.*.label' => ['required', 'string', 'max:60'],
-            'contactSocialLinks.*.url' => ['nullable', 'url', 'max:255'],
+            'contactSocialLinks.*.url'   => ['nullable', 'string', 'max:500'],
         ]);
 
         $socialLinks = collect($this->contactSocialLinks)
             ->map(fn($item) => [
                 'label' => trim((string) data_get($item, 'label', '')),
-                'url' => trim((string) data_get($item, 'url', '')),
+                'url'   => trim((string) data_get($item, 'url', '')),
             ])
             ->filter(fn($item) => $item['label'] !== '')
             ->values()
@@ -274,18 +275,45 @@ class AdminBerandaContentPage extends Component
             return;
         }
 
+        // Bangun embed URL dari query (nama/koordinat), atau simpan langsung jika sudah URL embed
+        $mapQuery = trim($this->contactMapQuery);
+        if ($mapQuery !== '') {
+            if (str_contains($mapQuery, 'output=embed') || str_contains($mapQuery, '/maps/embed')) {
+                // Already a proper embed URL
+                $this->contactMapEmbedUrl = $mapQuery;
+            } elseif (str_starts_with($mapQuery, 'http')) {
+                // Try to extract q= param from Google Maps share links
+                $parsed = parse_url($mapQuery);
+                if (isset($parsed['query'])) {
+                    parse_str($parsed['query'], $params);
+                    $q = $params['q'] ?? $params['query'] ?? null;
+                    if ($q) {
+                        $this->contactMapEmbedUrl = 'https://maps.google.com/maps?q=' . urlencode($q) . '&output=embed';
+                    } else {
+                        // Short link or unrecognised format — use URL itself as search query
+                        $this->contactMapEmbedUrl = 'https://maps.google.com/maps?q=' . urlencode($mapQuery) . '&output=embed';
+                    }
+                } else {
+                    $this->contactMapEmbedUrl = 'https://maps.google.com/maps?q=' . urlencode($mapQuery) . '&output=embed';
+                }
+            } else {
+                // Plain name or coordinates
+                $this->contactMapEmbedUrl = 'https://maps.google.com/maps?q=' . urlencode($mapQuery) . '&output=embed';
+            }
+        }
+
         $row = $this->getSettingsRow();
-        $row->fill([
-            'contact_email' => $this->contactEmail,
-            'contact_phone' => $this->contactPhone,
-            'contact_whatsapp' => $this->contactWhatsapp,
-            'contact_address' => $this->contactAddress,
-            'contact_socials' => collect($socialLinks)->pluck('label')->implode(' · '),
-            'contact_social_links' => $socialLinks,
-            'contact_map_embed_url' => $this->contactMapEmbedUrl,
-        ]);
+        $row->contact_email          = $this->contactEmail;
+        $row->contact_phone          = $this->contactPhone;
+        $row->contact_whatsapp       = $this->contactWhatsapp;
+        $row->contact_address        = $this->contactAddress;
+        $row->contact_map_embed_url  = $this->contactMapEmbedUrl;
+        $row->contact_socials        = collect($socialLinks)->pluck('label')->implode(' · ');
+        $row->contact_social_links   = $socialLinks;
         $row->save();
 
+        // Reload agar state sinkron
+        $this->contactMapQuery = $this->contactMapEmbedUrl;
         $this->flashStatus('Informasi kontak berhasil dipublikasikan.');
     }
 
@@ -409,6 +437,14 @@ class AdminBerandaContentPage extends Component
         $this->contactAddress = $settings['contact_address'];
         $this->contactSocialLinks = $settings['contact_social_links'];
         $this->contactMapEmbedUrl = $settings['contact_map_embed_url'];
+        // Show the saved embed URL in the input so user can see and edit it
+        // Strip output=embed suffix for cleaner display if it's a simple q= URL
+        $savedUrl = $settings['contact_map_embed_url'];
+        if (preg_match('/maps\.google\.com\/maps\?q=([^&]+)&output=embed/', $savedUrl, $m)) {
+            $this->contactMapQuery = urldecode($m[1]);
+        } else {
+            $this->contactMapQuery = $savedUrl;
+        }
         $this->kaprodiName = $settings['kaprodi_name'];
         $this->kaprodiTitle = $settings['kaprodi_title'];
         $this->kaprodiQuote = $settings['kaprodi_quote'];
