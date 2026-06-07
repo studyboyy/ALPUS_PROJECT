@@ -115,48 +115,56 @@ class HomePageSetting extends Model
             'gallery_items' => [
                 [
                     'title' => 'Kegiatan Akademik',
+                    'description' => 'Seminar dan diskusi akademik bersama dosen dan mahasiswa.',
                     'category' => 'Kegiatan Akademik',
                     'category_slug' => 'kegiatan-akademik',
                     'image_url' => 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
                     'title' => 'Prestasi Mahasiswa: Juara Inovasi',
+                    'description' => 'Tim mahasiswa meraih juara dalam kompetisi inovasi teknologi nasional.',
                     'category' => 'Prestasi Mahasiswa',
                     'category_slug' => 'prestasi-mahasiswa',
                     'image_url' => 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
                     'title' => 'Kegiatan Mahasiswa',
+                    'description' => 'Kegiatan pengembangan soft skill dan kepemimpinan mahasiswa.',
                     'category' => 'Kegiatan Mahasiswa',
                     'category_slug' => 'kegiatan-mahasiswa',
                     'image_url' => 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
                     'title' => 'Prestasi Mahasiswa: Finalis PKM',
+                    'description' => 'Delegasi prodi berhasil menjadi finalis PKM tingkat nasional.',
                     'category' => 'Prestasi Mahasiswa',
                     'category_slug' => 'prestasi-mahasiswa',
                     'image_url' => 'https://images.unsplash.com/photo-1517486808906-6ca8b3f8e1e0?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
                     'title' => 'Pengabdian Masyarakat',
+                    'description' => 'Program pelatihan digital untuk pelaku UMKM di daerah sekitar kampus.',
                     'category' => 'Pengabdian Masyarakat',
                     'category_slug' => 'pengabdian-masyarakat',
                     'image_url' => 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
                     'title' => 'Kerjasama dan MoU',
+                    'description' => 'Penandatanganan MoU dengan mitra industri untuk program magang mahasiswa.',
                     'category' => 'Kerjasama & MoU',
                     'category_slug' => 'kerjasama-mou',
                     'image_url' => 'https://images.unsplash.com/photo-1517486808906-6ca8b3f8e1e0?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
                     'title' => 'Seminar dan Workshop',
+                    'description' => 'Workshop pengembangan kurikulum bersama praktisi industri dan akademisi.',
                     'category' => 'Kegiatan Akademik',
                     'category_slug' => 'kegiatan-akademik',
                     'image_url' => 'https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=900&q=80',
                 ],
                 [
                     'title' => 'Kegiatan Eksternal',
+                    'description' => 'Kunjungan delegasi industri dalam rangka studi banding dan kolaborasi.',
                     'category' => 'Kerjasama & MoU',
                     'category_slug' => 'kerjasama-mou',
                     'image_url' => 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=900&q=80',
@@ -199,10 +207,11 @@ class HomePageSetting extends Model
                 );
 
                 return [
-                    'title' => (string) data_get($item, 'title', ''),
-                    'category' => $category,
+                    'title'         => (string) data_get($item, 'title', ''),
+                    'description'   => (string) data_get($item, 'description', ''),
+                    'category'      => $category,
                     'category_slug' => (string) data_get($item, 'category_slug', static::slugFromCategory($category)),
-                    'image_url' => (string) data_get($item, 'image_url', ''),
+                    'image_url'     => (string) data_get($item, 'image_url', ''),
                 ];
             })
             ->values();

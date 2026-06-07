@@ -17,11 +17,12 @@ class ProfilPage extends Component
     public function render()
     {
         $profileSections = [];
+        // Fallback highlight items — semua kosong agar tidak menipu dengan data statis
         $highlightItems = [
-            ['label' => 'Akreditasi', 'value' => 'Baik'],
-            ['label' => 'Rasio Dosen', 'value' => '-'],
-            ['label' => 'Publikasi', 'value' => '-'],
-            ['label' => 'Kerja Sama Aktif', 'value' => '0 mitra'],
+            ['label' => 'Akreditasi',       'value' => '-'],
+            ['label' => 'Rasio Dosen',      'value' => '-'],
+            ['label' => 'Publikasi',        'value' => '-'],
+            ['label' => 'Kerja Sama Aktif', 'value' => '-'],
         ];
 
         if (Schema::hasTable('profile_sections')) {

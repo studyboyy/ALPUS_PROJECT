@@ -41,7 +41,7 @@ class AdminAuthController extends Controller
         $this->ensureAdminAccountExists();
 
         if (Auth::check() && Auth::user()?->email === $this->adminEmail()) {
-            return redirect()->route('admin.dashboard-data');
+            return redirect()->route('admin.dashboard');
         }
 
         return view('admin.login');
@@ -76,7 +76,7 @@ class AdminAuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('admin.dashboard-data');
+        return redirect()->route('admin.dashboard');
     }
 
     public function logout(Request $request): RedirectResponse

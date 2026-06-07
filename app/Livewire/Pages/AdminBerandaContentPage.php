@@ -66,11 +66,12 @@ class AdminBerandaContentPage extends Component
     public function tambahGalleryItem(): void
     {
         $this->galleryItems[] = [
-            'title' => 'Foto Kegiatan Baru',
-            'category' => 'Kegiatan Akademik',
+            'title'           => 'Foto Kegiatan Baru',
+            'description'     => '',
+            'category'        => 'Kegiatan Akademik',
             'custom_category' => '',
-            'category_slug' => HomePageSetting::slugFromCategory('Kegiatan Akademik'),
-            'image_url' => '',
+            'category_slug'   => HomePageSetting::slugFromCategory('Kegiatan Akademik'),
+            'image_url'       => '',
         ];
     }
 
@@ -415,11 +416,12 @@ class AdminBerandaContentPage extends Component
         $this->quickHighlights = $settings['quick_highlights'];
         $this->galleryItems = collect($settings['gallery_items'] ?? [])
             ->map(fn($item) => [
-                'title' => (string) data_get($item, 'title', 'Foto Kegiatan'),
-                'category' => (string) data_get($item, 'category', 'Kegiatan Akademik'),
+                'title'           => (string) data_get($item, 'title', 'Foto Kegiatan'),
+                'description'     => (string) data_get($item, 'description', ''),
+                'category'        => (string) data_get($item, 'category', 'Kegiatan Akademik'),
                 'custom_category' => '',
-                'category_slug' => (string) data_get($item, 'category_slug', HomePageSetting::slugFromCategory((string) data_get($item, 'category', 'Kegiatan Akademik'))),
-                'image_url' => (string) data_get($item, 'image_url', ''),
+                'category_slug'   => (string) data_get($item, 'category_slug', HomePageSetting::slugFromCategory((string) data_get($item, 'category', 'Kegiatan Akademik'))),
+                'image_url'       => (string) data_get($item, 'image_url', ''),
             ])
             ->values()
             ->all();
@@ -445,8 +447,9 @@ class AdminBerandaContentPage extends Component
                 ];
 
                 if ($withTitle) {
-                    $payload['title'] = trim((string) data_get($item, 'title', 'Foto Kegiatan'));
-                    $payload['category'] = trim((string) data_get($item, 'category', 'Kegiatan Akademik'));
+                    $payload['title']         = trim((string) data_get($item, 'title', 'Foto Kegiatan'));
+                    $payload['description']   = trim((string) data_get($item, 'description', ''));
+                    $payload['category']      = trim((string) data_get($item, 'category', 'Kegiatan Akademik'));
                     $payload['category_slug'] = HomePageSetting::slugFromCategory($payload['category']);
                 }
 

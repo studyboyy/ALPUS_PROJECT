@@ -4,507 +4,442 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ isset($title) ? $title . ' - ' : '' }}Admin Panel Prodi</title>
+    <title>{{ isset($title) ? $title . ' — ' : '' }}Admin Panel</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Fraunces:opsz,wght@9..144,600&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Lora:wght@600&display=swap" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 
     <style>
         :root {
-            --bg-main: #f5f5fb;
-            --bg-card: #ffffff;
-            --ink: #2f2b3d;
-            --muted: #8d8a9d;
-            --line: #ebeaf2;
-            --accent: #7367f0;
-            --accent-soft: #f1efff;
+            --adm-bg:      #f6f7fb;
+            --adm-card:    #ffffff;
+            --adm-ink:     #18181b;
+            --adm-muted:   #71717a;
+            --adm-line:    #e4e4e7;
+            --adm-accent:  #6366f1;
+            --adm-soft:    #eef2ff;
+            --adm-sidebar: #ffffff;
+            /* portal variable aliases — needed for bg-(--accent) etc. in admin pages */
+            --accent:      #6366f1;
+            --accent-soft: #eef2ff;
+            --line:        #e4e4e7;
+            --muted:       #71717a;
+            --ink:         #18181b;
         }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html { height: 100%; }
 
         body {
-            font-family: 'Manrope', sans-serif;
-            background: var(--bg-main);
-            color: var(--ink);
+            font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+            background: var(--adm-bg);
+            color: var(--adm-ink);
+            min-height: 100%;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .display-font {
-            font-family: 'Fraunces', serif;
-        }
+        .display-font { font-family: 'Lora', Georgia, serif; }
 
-        .section-box,
-        .panel-card,
-        .topbar-card {
-            background: var(--bg-card);
-            border: 1px solid var(--line);
-            box-shadow: 0 10px 30px rgba(47, 43, 61, 0.06);
-        }
-
-        .admin-sidebar {
+        /* ── Sidebar ── */
+        .adm-sidebar {
             position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 40;
-            width: 260px;
-            height: 100vh;
-            overflow-y: auto;
-            background: #fff;
-            border-right: 1px solid var(--line);
-            padding: 1rem 0.85rem;
-        }
-
-        .admin-main {
-            margin-left: 260px;
-            min-height: 100vh;
-            padding: 1.2rem;
-        }
-
-        .sidebar-section-title {
-            padding: 0 0.85rem;
-            font-size: 0.72rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #b3b1c2;
-        }
-
-        .sidebar-link {
+            inset: 0 auto 0 0;
+            z-index: 50;
+            width: 224px;
+            background: var(--adm-sidebar);
             display: flex;
-            position: relative;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .adm-sidebar::-webkit-scrollbar { width: 4px; }
+        .adm-sidebar::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 99px; }
+
+        .adm-brand {
+            display: flex;
             align-items: center;
-            gap: 0.75rem;
-            border-radius: 0.8rem;
-            border: 1px solid transparent;
-            padding: 0.72rem 0.85rem;
-            font-size: 0.95rem;
+            gap: 0.625rem;
+            padding: 1.25rem 1rem 1rem;
+            border-bottom: 1px solid var(--adm-line);
+        }
+
+        .adm-brand-icon {
+            flex-shrink: 0;
+            width: 2rem; height: 2rem;
+            border-radius: 0.5rem;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            display: grid; place-items: center;
+            box-shadow: 0 2px 8px rgba(99,102,241,.25);
+        }
+
+        .adm-brand-name {
+            font-size: 0.8125rem;
             font-weight: 700;
-            color: #5d596c;
-            transition: all 0.25s ease;
+            color: #18181b;
+            line-height: 1.25;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .sidebar-link:hover {
-            background: #f8f7ff;
-            border-color: #ede9fe;
-            color: #2f2b3d;
-            transform: translateX(2px);
+        .adm-brand-sub {
+            font-size: 0.6875rem;
+            color: #a1a1aa;
+            font-weight: 500;
         }
 
-        .sidebar-link.active {
-            background: linear-gradient(90deg, #f3f1ff 0%, #f8f7ff 100%);
-            border-color: #ddd8ff;
-            color: #5d50de;
-            box-shadow: 0 10px 22px rgba(115, 103, 240, 0.16);
-            transform: translateX(2px);
+        .adm-nav { flex: 1; padding: 0.75rem 0.625rem; }
+
+        .adm-nav-group { margin-bottom: 1.5rem; }
+
+        .adm-nav-label {
+            padding: 0 0.5rem 0.375rem;
+            font-size: 0.625rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #a1a1aa;
         }
 
-        .sidebar-link.active::before {
+        .adm-link {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.625rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #52525b;
+            transition: background 0.12s, color 0.12s;
+            position: relative;
+            text-decoration: none;
+        }
+
+        .adm-link:hover {
+            background: #f4f4f5;
+            color: #18181b;
+        }
+
+        .adm-link.active {
+            background: #eef2ff;
+            color: #4338ca;
+            font-weight: 700;
+        }
+
+        .adm-link.active::before {
             content: '';
             position: absolute;
-            left: 0.45rem;
-            top: 0.45rem;
-            bottom: 0.45rem;
-            width: 4px;
+            left: 0; top: 25%; bottom: 25%;
+            width: 3px;
             border-radius: 999px;
-            background: linear-gradient(180deg, #7367f0 0%, #5b4fe0 100%);
+            background: #6366f1;
         }
 
-        .sidebar-icon {
-            display: inline-flex;
-            height: 1.15rem;
-            width: 1.15rem;
+        .adm-link svg { flex-shrink: 0; opacity: .6; }
+        .adm-link.active svg { opacity: 1; color: #6366f1; }
+        .adm-link:hover svg { opacity: .8; }
+
+        .adm-footer {
+            padding: 0.75rem 0.625rem 1rem;
+            border-top: 1px solid var(--adm-line);
+        }
+
+        /* ── Main ── */
+        .adm-main {
+            margin-left: 224px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Topbar ── */
+        .adm-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: rgba(246,247,251,.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--adm-line);
+            display: flex;
             align-items: center;
-            justify-content: center;
-            color: #6f6b7d;
-            flex-shrink: 0;
-            transition: color 0.25s ease;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
         }
 
-        .sidebar-link.active .sidebar-icon {
-            color: #5d50de;
+        .adm-topbar-title {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: var(--adm-ink);
         }
 
-        .sidebar-link.active .sidebar-label {
-            font-weight: 800;
+        .adm-topbar-action {
+            display: grid;
+            height: 2.25rem; width: 2.25rem;
+            place-items: center;
+            border-radius: 0.5rem;
+            border: 1px solid var(--adm-line);
+            background: #fff;
+            color: #71717a;
+            transition: background 0.12s, border-color 0.12s;
+            cursor: pointer;
+        }
+        .adm-topbar-action:hover {
+            background: var(--adm-soft);
+            border-color: #a5b4fc;
+            color: var(--adm-accent);
         }
 
-        .sidebar-label {
-            flex: 1;
-        }
-
-        .sidebar-arrow {
-            color: #8d8a9d;
-            flex-shrink: 0;
-        }
-
-        .sidebar-badge {
-            min-width: 1.55rem;
+        .adm-avatar {
+            display: grid;
+            height: 2rem; width: 2rem;
+            place-items: center;
             border-radius: 999px;
-            background: #ff4d5e;
-            padding: 0.12rem 0.45rem;
-            text-align: center;
-            font-size: 0.72rem;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            font-size: 0.6875rem;
             font-weight: 800;
             color: #fff;
             flex-shrink: 0;
         }
 
-        .brand-mark {
-            height: 1.1rem;
-            width: 1.1rem;
-            border-radius: 0.35rem;
-            background: linear-gradient(135deg, #7367f0, #8c7dff);
-            transform: rotate(45deg);
-            flex-shrink: 0;
+        /* ── Content area ── */
+        .adm-content { flex: 1; padding: 1.5rem; }
+
+        /* ── Cards ── */
+        .section-box {
+            background: var(--adm-card);
+            border: 1px solid var(--adm-line);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
         }
 
-        .topbar-card {
-            display: flex;
-            position: sticky;
-            top: 0;
-            z-index: 30;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            border-radius: 1rem;
-            padding: 1rem 1.25rem;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(14px);
-        }
-
-        .search-shell {
-            display: flex;
-            min-width: 320px;
-            flex: 1;
-            align-items: center;
-            gap: 0.85rem;
-            border-radius: 0.95rem;
-            border: 1px solid var(--line);
-            background: #fff;
-            padding: 0.85rem 1rem;
-        }
-
-        .topbar-action {
-            display: grid;
-            height: 2.6rem;
-            width: 2.6rem;
-            place-items: center;
-            border: 1px solid var(--line);
-            border-radius: 0.95rem;
-            background: #fff;
-            color: #6f6b7d;
-        }
-
+        /* ── Toast ── */
         .admin-toast {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 120;
-            max-width: 360px;
-            border-radius: 0.9rem;
+            position: fixed; top: 1rem; right: 1rem;
+            z-index: 200;
+            max-width: 340px;
+            border-radius: 0.75rem;
             border: 1px solid #bbf7d0;
             background: #f0fdf4;
             color: #166534;
-            padding: 0.85rem 1rem;
-            box-shadow: 0 16px 34px rgba(22, 101, 52, 0.2);
-            opacity: 0;
-            transform: translateY(-10px);
+            padding: 0.875rem 1.125rem;
+            box-shadow: 0 12px 32px rgba(22,101,52,.2);
+            opacity: 0; transform: translateY(-8px);
             pointer-events: none;
-            transition: opacity 0.35s ease, transform 0.35s ease;
+            transition: opacity .3s ease, transform .3s ease;
         }
-
-        .admin-toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .admin-toast.hide {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
+        .admin-toast.show { opacity: 1; transform: translateY(0); }
+        .admin-toast.hide { opacity: 0; transform: translateY(-8px); }
 
         @media (max-width: 1023px) {
-            .admin-sidebar {
-                position: static;
-                width: 100%;
-                height: auto;
-            }
-
-            .admin-main {
-                margin-left: 0;
-            }
-
-            .topbar-card {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-shell {
-                min-width: 0;
-            }
+            .adm-sidebar { position: static; width: 100%; height: auto; }
+            .adm-main { margin-left: 0; }
         }
     </style>
 </head>
 
 <body>
+    @php
+        $adminHomeContent = \App\Models\HomePageSetting::current();
+        $adminProdiName   = trim((string) ($adminHomeContent['header_logo_label'] ?? 'Program Studi'));
+        $adminInitials    = collect(explode(' ', $adminProdiName))->take(2)->map(fn($w) => strtoupper(substr($w, 0, 1)))->implode('');
+        if ($adminInitials === '') { $adminInitials = 'PS'; }
+        $adminPageTitle   = isset($title) ? $title : 'Dashboard';
+    @endphp
+
     @if (session()->has('status'))
         <div id="admin-toast" class="admin-toast" role="status" aria-live="polite"
             data-toast-message="{{ session('status') }}">
-            <p class="text-sm font-semibold">Data berhasil disimpan</p>
-            <p class="mt-1 text-xs text-emerald-700/90">{{ session('status') }}</p>
+            <p class="text-sm font-semibold">Tersimpan</p>
+            <p class="mt-0.5 text-xs text-emerald-700/90">{{ session('status') }}</p>
         </div>
     @endif
 
-    <aside class="admin-sidebar">
-        <div class="mb-6 flex items-center gap-3 px-3">
-            <div class="brand-mark"></div>
-            <div class="text-3xl font-extrabold tracking-tight text-slate-800">Prodi</div>
+    {{-- ── Sidebar ── --}}
+    <aside class="adm-sidebar">
+        {{-- Brand --}}
+        <div class="adm-brand">
+            <div class="adm-brand-icon">
+                <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div class="min-w-0">
+                <p class="adm-brand-name">{{ $adminProdiName }}</p>
+                <p class="adm-brand-sub">Admin Panel</p>
+            </div>
         </div>
 
-        <div class="">
-            <div>
-                <p class="sidebar-section-title">Dashboard</p>
-                <nav class="mt-3 space-y-1.5">
-                    <a wire:navigate.hover href="{{ route('admin.dashboard-data') }}"
-                        class="sidebar-link {{ request()->routeIs('admin.dashboard-data') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9z" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Dashboards</span>
+        {{-- Nav --}}
+        <nav class="adm-nav">
 
-                    </a>
-                </nav>
+        
+
+            <div class="adm-nav-group">
+                <p class="adm-nav-label">Utama</p>
+                <a wire:navigate.hover href="{{ route('admin.dashboard') }}"
+                    class="adm-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    Dashboard
+                </a>
             </div>
 
-            <div>
-                <p class="sidebar-section-title">Konten Utama</p>
-                <nav class="space-y-1.5">
-                    <a wire:navigate.hover href="{{ route('admin.program-agenda') }}"
-                        class="sidebar-link {{ request()->routeIs('admin.program-agenda') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Program & Agenda</span>
-
-                    </a>
-                    <a wire:navigate.hover href="{{ route('admin.annual-report') }}"
-                        class="sidebar-link {{ request()->routeIs('admin.annual-report') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Laporan Tahunan</span>
-                    </a>
-                    <a wire:navigate.hover href="{{ route('admin.beranda-content') }}"
-                        class="sidebar-link {{ request()->routeIs('admin.beranda-content') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M12 6v12m6-6H6m14-7H4a1 1 0 00-1 1v12a1 1 0 001 1h16a1 1 0 001-1V6a1 1 0 00-1-1z" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Konten Beranda</span>
-
-                    </a>
-                    <a wire:navigate.hover href="{{ route('admin.feedback') }}"
-                        class="sidebar-link {{ request()->routeIs('admin.feedback') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M8 10h8M8 14h5M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H7l-4 3V7a1 1 0 011-1z" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Inbox Umpan Balik</span>
-                    </a>
-                    <a wire:navigate.hover href="{{ route('admin.documents') }}"
-                        class="sidebar-link {{ request()->routeIs('admin.documents') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M7 3h8l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 3v6h6" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Dokumen Publik</span>
-                    </a>
-                    <a wire:navigate.hover href="{{ route('admin.profile') }}"
-                        class="sidebar-link {{ request()->routeIs('admin.profile') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Profil Program Studi</span>
-                    </a>
-                </nav>
+            <div class="adm-nav-group">
+                <p class="adm-nav-label">Konten</p>
+                <a wire:navigate.hover href="{{ route('admin.dashboard-data') }}"
+                    class="adm-link {{ request()->routeIs('admin.dashboard-data') ? 'active' : '' }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Kelola Statistik
+                </a>
+                <a wire:navigate.hover href="{{ route('admin.program-agenda') }}"
+                    class="adm-link {{ request()->routeIs('admin.program-agenda') ? 'active' : '' }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Program &amp; Agenda
+                </a>
+                <a wire:navigate.hover href="{{ route('admin.annual-report') }}"
+                    class="adm-link {{ request()->routeIs('admin.annual-report') ? 'active' : '' }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Laporan Tahunan
+                </a>
+                <a wire:navigate.hover href="{{ route('admin.beranda-content') }}"
+                    class="adm-link {{ request()->routeIs('admin.beranda-content') ? 'active' : '' }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                    </svg>
+                    Konten Beranda
+                </a>
+                <a wire:navigate.hover href="{{ route('admin.documents') }}"
+                    class="adm-link {{ request()->routeIs('admin.documents') ? 'active' : '' }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 3h8l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 3v6h6"/>
+                    </svg>
+                    Dokumen Publik
+                </a>
+                <a wire:navigate.hover href="{{ route('admin.profile') }}"
+                    class="adm-link {{ request()->routeIs('admin.profile') ? 'active' : '' }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Profil Prodi
+                </a>
+                <a wire:navigate.hover href="{{ route('admin.feedback') }}"
+                    class="adm-link {{ request()->routeIs('admin.feedback') ? 'active' : '' }}">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    Umpan Balik
+                </a>
             </div>
 
-            <div>
-                <p class="sidebar-section-title">Layanan Publik</p>
-                <nav class="space-y-1.5">
-                    <a wire:navigate.hover href="{{ route('home') }}"
-                        class="sidebar-link {{ request()->routeIs('home') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M3 12l9-9 9 9M4 10v10h16V10" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Front Pages</span>
-
-                    </a>
-                    <a href="{{ route('laporan.pdf') }}"
-                        class="sidebar-link {{ request()->routeIs('laporan.pdf') ? 'active' : '' }}">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M7 3h8l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 3v6h6" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Export PDF</span>
-
-                    </a>
-                </nav>
+            <div class="adm-nav-group">
+                <p class="adm-nav-label">Lainnya</p>
+                <a wire:navigate.hover href="{{ route('home') }}" target="_blank"
+                    class="adm-link">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    Lihat Portal
+                </a>
+                <a href="{{ route('laporan.pdf') }}" class="adm-link">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Export PDF
+                </a>
             </div>
 
-            <div>
-                <p class="sidebar-section-title">Session</p>
-                <form method="POST" action="{{ route('admin.logout') }}" class="mt-3">
-                    @csrf
-                    <button type="submit" class="sidebar-link w-full text-left">
-                        <span class="sidebar-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                class="h-4 w-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H9" />
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M13 20H6a2 2 0 01-2-2V6a2 2 0 012-2h7" />
-                            </svg>
-                        </span>
-                        <span class="sidebar-label">Logout</span>
-                    </button>
-                </form>
-            </div>
+        </nav>
+
+        {{-- Footer: logout --}}
+        <div class="adm-footer">
+            <form method="POST" action="{{ route('admin.logout') }}">
+                @csrf
+                <button type="submit" class="adm-link w-full">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Keluar
+                </button>
+            </form>
         </div>
     </aside>
 
-    <main class="admin-main">
-        <div class="w-full">
-            <section class="topbar-card mb-5 w-full ">
+    {{-- ── Main ── --}}
+    <div class="adm-main">
 
-                <div class="flex  w-full justify-end items-center gap-2">
-                    <div class="topbar-action">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            class="h-4 w-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M3 12h18" />
-                        </svg>
-                    </div>
-                    <div class="topbar-action">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            class="h-4 w-4">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M15 17h5l-1.4-1.4A2 2 0 0118 14.17V11a6 6 0 10-12 0v3.17a2 2 0 01-.6 1.43L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
-                        </svg>
-                    </div>
-                    <div class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2">
-                        <div
-                            class="grid h-9 w-9 place-items-center rounded-full bg-linear-to-br from-violet-500 to-indigo-600 text-xs font-bold text-white">
-                            AP</div>
-                        <div class="hidden text-left sm:block">
-                            <p class="text-xs font-semibold text-slate-700">Admin Prodi</p>
-                            <p class="text-[11px] text-slate-400">Administrator</p>
-                        </div>
+        {{-- Topbar --}}
+        <header class="adm-topbar">
+            <div class="flex items-center gap-3">
+                <span class="adm-topbar-title">{{ $adminPageTitle }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a wire:navigate.hover href="{{ route('home') }}" target="_blank"
+                    class="adm-topbar-action" title="Buka Portal">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                </a>
+                <div class="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 shadow-sm">
+                    <div class="adm-avatar">{{ $adminInitials }}</div>
+                    <div class="hidden text-left sm:block">
+                        <p class="text-xs font-bold text-zinc-800 leading-tight">Admin</p>
+                        <p class="text-[10px] text-zinc-400 leading-tight">{{ $adminProdiName }}</p>
                     </div>
                 </div>
-            </section>
+            </div>
+        </header>
 
+        {{-- Page content --}}
+        <div class="adm-content">
             {{ $slot }}
         </div>
-    </main>
+    </div>
 
     @livewireScriptConfig
     <script>
-        (function() {
-            let hideTimer = null;
-            let removeTimer = null;
-
-            const renderToast = (message) => {
-                let toast = document.getElementById('admin-toast');
-
-                if (!toast) {
-                    toast = document.createElement('div');
-                    toast.id = 'admin-toast';
-                    toast.className = 'admin-toast';
-                    toast.setAttribute('role', 'status');
-                    toast.setAttribute('aria-live', 'polite');
-                    document.body.appendChild(toast);
-                }
-
-                toast.innerHTML = `
-                    <p class="text-sm font-semibold">Data berhasil disimpan</p>
-                    <p class="mt-1 text-xs text-emerald-700/90"></p>
-                `;
-
-                const detail = toast.querySelector('p:last-child');
-                if (detail) {
-                    detail.textContent = message || 'Perubahan berhasil disimpan.';
-                }
-
-                toast.classList.remove('hide');
-                requestAnimationFrame(() => {
-                    toast.classList.add('show');
-                });
-
-                if (hideTimer) {
-                    clearTimeout(hideTimer);
-                }
-                if (removeTimer) {
-                    clearTimeout(removeTimer);
-                }
-
-                hideTimer = setTimeout(() => {
-                    toast.classList.remove('show');
-                    toast.classList.add('hide');
-                }, 3200);
-
-                removeTimer = setTimeout(() => {
-                    toast.remove();
-                }, 3800);
-            };
-
-            const initialToast = document.getElementById('admin-toast');
-            if (initialToast) {
-                renderToast(initialToast.dataset.toastMessage || 'Perubahan berhasil disimpan.');
+    (function () {
+        let hideT, removeT;
+        const renderToast = (msg) => {
+            let el = document.getElementById('admin-toast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'admin-toast';
+                el.className = 'admin-toast';
+                el.setAttribute('role', 'status');
+                el.setAttribute('aria-live', 'polite');
+                document.body.appendChild(el);
             }
-
-            document.addEventListener('livewire:init', () => {
-                Livewire.on('admin-toast', (event) => {
-                    const payload = Array.isArray(event) ? event[0] : event;
-                    renderToast(payload?.message || 'Perubahan berhasil disimpan.');
-                });
+            el.innerHTML = `<p class="text-sm font-semibold">Tersimpan</p><p class="mt-0.5 text-xs text-emerald-700/90">${msg || 'Perubahan berhasil disimpan.'}</p>`;
+            el.classList.remove('hide');
+            requestAnimationFrame(() => el.classList.add('show'));
+            clearTimeout(hideT); clearTimeout(removeT);
+            hideT   = setTimeout(() => { el.classList.remove('show'); el.classList.add('hide'); }, 3200);
+            removeT = setTimeout(() => el.remove(), 3800);
+        };
+        const init = document.getElementById('admin-toast');
+        if (init) renderToast(init.dataset.toastMessage);
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('admin-toast', (e) => {
+                const p = Array.isArray(e) ? e[0] : e;
+                renderToast(p?.message);
             });
-        })();
+        });
+    })();
     </script>
 </body>
-
 </html>

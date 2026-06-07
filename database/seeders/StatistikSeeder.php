@@ -312,18 +312,48 @@ class StatistikSeeder extends Seeder
     private function seedHomePage(): void
     {
         $galleryItems = [];
-        $categories   = [
-            'Prestasi Mahasiswa',
-            'Kegiatan Akademik',
-            'Kegiatan Mahasiswa',
-            'Pengabdian Masyarakat',
-            'Kerjasama & MoU',
+
+        // Per-category descriptions for realistic seeded data
+        $categoryDescriptions = [
+            'Prestasi Mahasiswa' => [
+                'Tim mahasiswa meraih juara pertama dalam kompetisi inovasi nasional.',
+                'Delegasi prodi berhasil menjadi finalis PKM tingkat nasional.',
+                'Mahasiswa berprestasi menerima penghargaan akademik terbaik semester ini.',
+                'Juara lomba karya ilmiah tingkat provinsi diraih tim mahasiswa.',
+            ],
+            'Kegiatan Akademik' => [
+                'Seminar internasional menghadirkan narasumber dari berbagai universitas terkemuka.',
+                'Workshop pengembangan kurikulum bersama praktisi industri dan akademisi.',
+                'Kuliah umum dengan pakar bidang teknologi informasi dari luar negeri.',
+                'Diskusi panel dosen dan mahasiswa tentang tren riset terkini.',
+            ],
+            'Kegiatan Mahasiswa' => [
+                'Kegiatan pengembangan soft skill dan kepemimpinan mahasiswa baru.',
+                'Expo karya mahasiswa menampilkan proyek akhir semester terbaik.',
+                'Kegiatan sosial dan bakti masyarakat di lingkungan sekitar kampus.',
+                'Orientasi studi dan pengenalan kampus bagi mahasiswa angkatan baru.',
+            ],
+            'Pengabdian Masyarakat' => [
+                'Program pelatihan teknologi digital untuk pelaku UMKM di daerah.',
+                'Kegiatan literasi digital bagi masyarakat umum bersama dosen dan mahasiswa.',
+                'Penyuluhan kesehatan dan lingkungan di komunitas sekitar kampus.',
+                'Pendampingan usaha mikro oleh tim dosen dan mahasiswa relawan.',
+            ],
+            'Kerjasama & MoU' => [
+                'Penandatanganan MoU dengan perusahaan teknologi nasional untuk magang mahasiswa.',
+                'Kunjungan delegasi industri dalam rangka studi banding dan kolaborasi.',
+                'Forum diskusi kemitraan strategis bersama alumni dan mitra industri.',
+                'Peluncuran program dual-degree dengan universitas mitra luar negeri.',
+            ],
         ];
+
         $seed = 400;
-        foreach ($categories as $category) {
-            for ($i = 1; $i <= 4; $i++) {
+        foreach ($categoryDescriptions as $category => $descriptions) {
+            foreach ($descriptions as $i => $desc) {
+                $num = $i + 1;
                 $galleryItems[] = [
-                    'title'         => $category . ' #' . $i,
+                    'title'         => $category . ' #' . $num,
+                    'description'   => $desc,
                     'category'      => $category,
                     'category_slug' => HomePageSetting::slugFromCategory($category),
                     'image_url'     => 'https://picsum.photos/seed/s' . $seed . '/900/600',

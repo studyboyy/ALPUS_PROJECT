@@ -1,393 +1,501 @@
-<div class="space-y-6">
-    <section class="section-box rounded-3xl p-6 md:p-8">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="display-font text-4xl leading-tight">Konten Beranda</h2>
-                <p class="mt-2 text-sm text-(--muted)">Kelola hero background, data Kepala Prodi, dan foto galeri dari
-                    satu panel modern.</p>
-            </div>
-            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">Home CMS</span>
+<div
+    x-data="{ tab: window.location.hash ? window.location.hash.replace('#','') : 'header' }"
+    class="space-y-5">
+
+    {{-- ── Page header ── --}}
+    <div class="flex items-center justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-zinc-800">Konten Beranda</h2>
+            <p class="mt-0.5 text-sm text-zinc-500">Kelola semua konten halaman utama portal.</p>
         </div>
+        <span class="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">CMS</span>
+    </div>
 
-    </section>
+    {{-- ── Tab nav ── --}}
+    <div class="section-box flex flex-wrap gap-1 rounded-2xl p-2">
+        @php
+            $tabs = [
+                ['id'=>'header',    'label'=>'Header',    'icon'=>'M4 6h16M4 12h8m-8 6h16'],
+                ['id'=>'hero',      'label'=>'Hero',      'icon'=>'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14'],
+                ['id'=>'kaprodi',   'label'=>'Kaprodi',   'icon'=>'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
+                ['id'=>'kontak',    'label'=>'Kontak',    'icon'=>'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'],
+                ['id'=>'highlight', 'label'=>'Highlight', 'icon'=>'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z'],
+                ['id'=>'galeri',    'label'=>'Galeri',    'icon'=>'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'],
+            ];
+        @endphp
+        @foreach ($tabs as $t)
+            <button type="button" @click="tab = '{{ $t['id'] }}'"
+                :class="tab === '{{ $t['id'] }}' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100'"
+                class="flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-150">
+                <svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="{{ $t['icon'] }}"/>
+                </svg>
+                {{ $t['label'] }}
+            </button>
+        @endforeach
+    </div>
 
-    <section class="section-box rounded-3xl p-6 md:p-8">
-        <h3 class="text-lg font-bold">Header Portal</h3>
-        <form wire:submit="simpanHeaderPortal" class="mt-4 grid gap-4 md:grid-cols-2">
-            <label class="text-sm">Teks Atas Logo
-                <input wire:model.defer="headerLogoLabel" type="text"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-            </label>
-            <label class="text-sm">Judul Header
-                <input wire:model.defer="headerTitleText" type="text"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-            </label>
-            <label class="text-sm md:col-span-2">Upload Logo Header
-                <input wire:model="headerLogoFile" type="file" accept="image/*"
-                    class="mt-2 w-full rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 px-4 py-3 text-sm text-indigo-700" />
-            </label>
-            <div class="md:col-span-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/90 px-4 py-4">
-                    <div class="flex items-center gap-4">
-                        @if ($headerLogoFile || $headerLogoUrl)
-                            <img src="{{ $headerLogoFile ? $headerLogoFile->temporaryUrl() : $headerLogoUrl }}"
-                                alt="Preview Logo Header"
-                                class="h-12 w-12 rounded-xl border border-slate-200 bg-white object-cover shadow-sm" />
-                        @else
-                            <div class="logo-badge">PS</div>
-                        @endif
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                                {{ $headerLogoLabel }}</p>
-                            <p class="display-font text-lg font-bold leading-tight text-slate-800">
-                                {{ $headerTitleText }}</p>
-                        </div>
+    {{-- ════════════════════════════════
+         TAB: HEADER
+    ════════════════════════════════ --}}
+    <div x-show="tab === 'header'" x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="section-box rounded-2xl p-6">
+            <h3 class="text-sm font-bold text-zinc-800">Header Portal</h3>
+            <p class="mt-1 text-xs text-zinc-500">Teks label di atas logo, judul besar, dan file logo.</p>
+
+            <form wire:submit="simpanHeaderPortal" class="mt-5 space-y-4">
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Teks Atas Logo</label>
+                        <input wire:model.defer="headerLogoLabel" type="text" placeholder="Program Studi"
+                            class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                     </div>
-                    <div class="hidden items-center gap-2 lg:flex">
-                        <span
-                            class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">Beranda</span>
-                        <span class="rounded-full px-3 py-1 text-xs font-semibold text-slate-500">Profil</span>
-                        <span class="rounded-full px-3 py-1 text-xs font-semibold text-slate-500">Laporan</span>
-                        <span class="rounded-full px-3 py-1 text-xs font-semibold text-slate-500">Galeri</span>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Judul Header (Nama Portal)</label>
+                        <input wire:model.defer="headerTitleText" type="text" placeholder="Laporan Tahunan [Nama Prodi]"
+                            class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Upload Logo (opsional)</label>
+                        <input wire:model="headerLogoFile" type="file" accept="image/*"
+                            class="w-full rounded-xl border border-dashed border-indigo-300 bg-indigo-50/40 px-3.5 py-2.5 text-sm text-indigo-700" />
                     </div>
                 </div>
-            </div>
-            <div class="md:col-span-2">
-                <button type="submit"
-                    class="rounded-2xl bg-linear-to-r from-blue-600 to-cyan-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-100">Publikasikan
-                    Header Portal</button>
-            </div>
-        </form>
-    </section>
 
-    <section class="section-box rounded-3xl p-6 md:p-8">
-        <div class="flex items-center justify-between gap-3">
-            <div>
-                <h3 class="text-lg font-bold">Kontak dan Peta</h3>
-                <p class="mt-1 text-sm text-(--muted)">Atur email, telepon, WhatsApp, media sosial, dan embed map
-                    publik.</p>
-            </div>
-            <button type="button" wire:click="tambahSocialLink"
-                class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Tambah
-                Media Sosial</button>
+                {{-- Preview --}}
+                <div class="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                    <div class="flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-4 py-3.5">
+                        <div class="flex items-center gap-3">
+                            @if ($headerLogoFile || $headerLogoUrl)
+                                <img src="{{ $headerLogoFile ? $headerLogoFile->temporaryUrl() : $headerLogoUrl }}"
+                                    class="h-10 w-10 rounded-lg border border-zinc-200 object-cover shadow-sm" alt="Logo"/>
+                            @else
+                                <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 grid place-items-center text-white text-xs font-bold shadow-sm">
+                                    {{ $adminInitials ?? 'PS' }}
+                                </div>
+                            @endif
+                            <div>
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-teal-700">{{ $headerLogoLabel }}</p>
+                                <p class="text-sm font-bold text-zinc-800 leading-tight">{{ $headerTitleText }}</p>
+                            </div>
+                        </div>
+                        <div class="hidden items-center gap-1.5 lg:flex">
+                            @foreach(['Beranda','Profil','Laporan','Statistik'] as $nav)
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $loop->first ? 'bg-indigo-100 text-indigo-700' : 'text-zinc-500' }}">{{ $nav }}</span>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-1">
+                    <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Simpan Header
+                    </button>
+                </div>
+            </form>
         </div>
-        <form wire:submit="simpanKontak" class="mt-4 grid gap-4 md:grid-cols-2">
-            <label class="text-sm">Email Kontak
-                <input wire:model.defer="contactEmail" type="email"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-            </label>
-            <label class="text-sm">Telepon
-                <input wire:model.defer="contactPhone" type="text" placeholder="(021) 1234567"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-            </label>
-            <label class="text-sm">WhatsApp
-                <input wire:model.defer="contactWhatsapp" type="text" placeholder="6281234567890"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-            </label>
-            <label class="text-sm md:col-span-2">Alamat
-                <textarea wire:model.defer="contactAddress" rows="3"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
-            </label>
-            <div class="md:col-span-2 space-y-3">
-                @foreach ($contactSocialLinks as $index => $social)
-                    <div wire:key="social-link-{{ $index }}"
-                        class="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[0.9fr_1.4fr_auto] md:items-end">
-                        <label class="text-sm">Nama Platform
-                            <input wire:model.defer="contactSocialLinks.{{ $index }}.label" type="text"
-                                placeholder="Instagram"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                        </label>
-                        <label class="text-sm">URL Platform
-                            <input wire:model.defer="contactSocialLinks.{{ $index }}.url" type="url"
-                                placeholder="https://instagram.com/prodi"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                        </label>
-                        <button type="button" wire:click="hapusSocialLink({{ $index }})"
-                            class="rounded-xl bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">Hapus</button>
+    </div>
+
+    {{-- ════════════════════════════════
+         TAB: HERO
+    ════════════════════════════════ --}}
+    <div x-show="tab === 'hero'" x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="section-box rounded-2xl p-6">
+            <div class="flex items-center justify-between gap-3 mb-5">
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-800">Hero Carousel</h3>
+                    <p class="mt-0.5 text-xs text-zinc-500">Gambar latar hero di halaman beranda (carousel).</p>
+                </div>
+                <button type="button" wire:click="tambahHeroItem"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    Tambah Slide
+                </button>
+            </div>
+
+            <form wire:submit="simpanHero" class="space-y-3">
+                @foreach ($heroItems as $index => $item)
+                    @php $heroUpload = $heroImageFiles[$index] ?? null; @endphp
+                    <div class="flex items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                        <img src="{{ $heroUpload ? $heroUpload->temporaryUrl() : data_get($item, 'image_url') }}"
+                            alt="Slide {{ $index + 1 }}"
+                            class="h-20 w-36 flex-shrink-0 rounded-lg border border-zinc-200 object-cover shadow-sm"/>
+                        <div class="min-w-0 flex-1 space-y-2">
+                            <p class="text-xs font-semibold text-zinc-500">Slide {{ $index + 1 }}</p>
+                            <input wire:model="heroImageFiles.{{ $index }}" type="file" accept="image/*"
+                                class="w-full rounded-lg border border-dashed border-indigo-300 bg-indigo-50/40 px-3 py-2 text-xs text-indigo-700"/>
+                        </div>
+                        <button type="button" wire:click="hapusHeroItem({{ $index }})"
+                            class="flex-shrink-0 rounded-lg bg-rose-50 p-2 text-rose-600 hover:bg-rose-100">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
                     </div>
                 @endforeach
-            </div>
-            <label class="text-sm md:col-span-2">URL Embed Google Maps
-                <textarea wire:model.defer="contactMapEmbedUrl" rows="3"
-                    placeholder="https://maps.google.com/maps?...&output=embed"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
-            </label>
-            <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div class="grid gap-3 md:grid-cols-4">
-                    <div class="rounded-2xl border border-blue-100 bg-white p-4">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">Email</p>
-                        <p class="mt-2 text-sm text-slate-700">{{ $contactEmail }}</p>
-                    </div>
-                    <div class="rounded-2xl border border-sky-100 bg-white p-4">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Telepon</p>
-                        <p class="mt-2 text-sm text-slate-700">{{ $contactPhone }}</p>
-                    </div>
-                    <div class="rounded-2xl border border-emerald-100 bg-white p-4">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Alamat</p>
-                        <p class="mt-2 text-sm text-slate-700">{{ $contactAddress }}</p>
-                    </div>
-                    <div class="rounded-2xl border border-violet-100 bg-white p-4">
-                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-violet-700">WhatsApp</p>
-                        <p class="mt-2 text-sm text-slate-700">{{ $contactWhatsapp }}</p>
-                    </div>
-                </div>
-                <div class="mt-4 flex flex-wrap gap-2">
-                    @foreach ($contactSocialLinks as $social)
-                        <span
-                            class="rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700">
-                            {{ data_get($social, 'label') }}
-                        </span>
-                    @endforeach
-                </div>
-                <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                    <iframe title="Preview Peta Lokasi" class="h-56 w-full" src="{{ $contactMapEmbedUrl }}"
-                        loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                </div>
-            </div>
-            <div class="md:col-span-2">
-                <button type="submit"
-                    class="rounded-2xl bg-linear-to-r from-sky-600 to-cyan-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-100">Publikasikan
-                    Kontak</button>
-            </div>
-        </form>
-    </section>
 
-    <section class="section-box rounded-3xl p-6 md:p-8">
-        <div class="flex items-center justify-between gap-3">
-            <h3 class="text-lg font-bold">Hero Beranda (Carousel)</h3>
-            <button type="button" wire:click="tambahHeroItem"
-                class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Tambah
-                Slide</button>
+                <div class="flex justify-end pt-1">
+                    <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Simpan Hero
+                    </button>
+                </div>
+            </form>
         </div>
-        <form wire:submit="simpanHero" class="mt-4 space-y-4">
-            @foreach ($heroItems as $index => $item)
-                @php $heroUpload = $heroImageFiles[$index] ?? null; @endphp
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <label class="text-sm">Upload Gambar Slide {{ $index + 1 }}
-                        <input wire:model="heroImageFiles.{{ $index }}" type="file" accept="image/*"
-                            class="mt-2 w-full rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 px-3 py-2 text-sm text-indigo-700" />
-                    </label>
-                    <div class="mt-3 flex items-center justify-between gap-3">
-                        <img src="{{ $heroUpload ? $heroUpload->temporaryUrl() : data_get($item, 'image_url') }}"
-                            alt="Preview Hero {{ $index + 1 }}"
-                            class="h-28 w-52 rounded-xl border border-slate-200 object-cover" />
-                        <button type="button" wire:click="hapusHeroItem({{ $index }})"
-                            class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">Hapus</button>
-                    </div>
-                </div>
-            @endforeach
-            <button type="submit"
-                class="rounded-2xl bg-linear-to-r from-indigo-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100">Publikasikan
-                Hero</button>
-        </form>
-    </section>
+    </div>
 
-    <section class="section-box rounded-3xl p-6 md:p-8">
-        <h3 class="text-lg font-bold">Kepala Prodi</h3>
-        <form wire:submit="simpanKaprodi" class="mt-4 grid gap-4 md:grid-cols-2">
-            <label class="text-sm">Nama Kepala Prodi
-                <input wire:model.defer="kaprodiName" type="text"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-            </label>
-            <label class="text-sm">Jabatan
-                <input wire:model.defer="kaprodiTitle" type="text"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-            </label>
-            <label class="text-sm md:col-span-2">Upload Foto Kepala Prodi
-                <input wire:model="kaprodiPhotoFile" type="file" accept="image/*"
-                    class="mt-2 w-full rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/50 px-4 py-3 text-sm text-indigo-700" />
-            </label>
-            <label class="text-sm md:col-span-2">Kutipan Kepala Prodi
-                <textarea wire:model.defer="kaprodiQuote" rows="4"
-                    class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
-            </label>
-            <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div class="flex items-center gap-4">
-                    <img src="{{ $kaprodiPhotoFile ? $kaprodiPhotoFile->temporaryUrl() : $kaprodiPhotoUrl }}"
-                        alt="Preview Kepala Prodi"
-                        class="h-16 w-16 rounded-full border border-slate-200 object-cover" />
+    {{-- ════════════════════════════════
+         TAB: KAPRODI
+    ════════════════════════════════ --}}
+    <div x-show="tab === 'kaprodi'" x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="section-box rounded-2xl p-6">
+            <h3 class="text-sm font-bold text-zinc-800 mb-5">Profil Kepala Prodi</h3>
+
+            <form wire:submit="simpanKaprodi" class="space-y-4">
+                <div class="grid gap-4 md:grid-cols-2">
                     <div>
-                        <p class="font-semibold text-slate-800">{{ $kaprodiName }}</p>
-                        <p class="text-xs text-slate-500">{{ $kaprodiTitle }}</p>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Nama Lengkap</label>
+                        <input wire:model.defer="kaprodiName" type="text"
+                            class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Jabatan / Gelar</label>
+                        <input wire:model.defer="kaprodiTitle" type="text"
+                            class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Kutipan / Pesan Kepala Prodi</label>
+                        <textarea wire:model.defer="kaprodiQuote" rows="4"
+                            class="w-full resize-none rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Upload Foto</label>
+                        <input wire:model="kaprodiPhotoFile" type="file" accept="image/*"
+                            class="w-full rounded-xl border border-dashed border-indigo-300 bg-indigo-50/40 px-3.5 py-2.5 text-sm text-indigo-700"/>
                     </div>
                 </div>
-                <p class="mt-3 text-sm text-slate-600">"{{ $kaprodiQuote }}"</p>
-            </div>
-            <div class="md:col-span-2">
-                <button type="submit"
-                    class="rounded-2xl bg-linear-to-r from-violet-600 to-fuchsia-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-100">Publikasikan
-                    Profil Kaprodi</button>
-            </div>
-        </form>
-    </section>
 
-    <section id="highlight-cepat" class="section-box rounded-3xl p-6 md:p-8 scroll-mt-28">
-        <div class="flex items-center justify-between gap-3">
-            <div>
-                <h3 class="text-lg font-bold">Highlight Cepat Beranda</h3>
-                <p class="mt-1 text-sm text-(--muted)">Seluruh kartu highlight di beranda diambil dari daftar ini.</p>
-            </div>
-            <button type="button" wire:click="tambahQuickHighlight"
-                class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Tambah
-                Highlight</button>
+                {{-- Preview --}}
+                <div class="flex items-center gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                    <img src="{{ $kaprodiPhotoFile ? $kaprodiPhotoFile->temporaryUrl() : $kaprodiPhotoUrl }}"
+                        class="h-14 w-14 rounded-full border-2 border-white object-cover shadow-sm flex-shrink-0" alt="Foto"/>
+                    <div class="min-w-0">
+                        <p class="font-bold text-zinc-800 leading-snug">{{ $kaprodiName }}</p>
+                        <p class="text-xs text-zinc-500">{{ $kaprodiTitle }}</p>
+                        <p class="mt-1.5 text-xs leading-relaxed text-zinc-500 italic line-clamp-2">"{{ $kaprodiQuote }}"</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-1">
+                    <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Simpan Kaprodi
+                    </button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <form wire:submit="simpanQuickHighlights" class="mt-4 space-y-4">
-            @foreach ($quickHighlights as $index => $item)
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                        <span
-                            class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                            Posisi {{ $index + 1 }}
-                        </span>
-                        <div class="flex gap-2">
-                            <button type="button" wire:click="pindahQuickHighlightKeAtas({{ $index }})"
-                                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Naik</button>
-                            <button type="button" wire:click="pindahQuickHighlightKeBawah({{ $index }})"
-                                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Turun</button>
+    {{-- ════════════════════════════════
+         TAB: KONTAK
+    ════════════════════════════════ --}}
+    <div x-show="tab === 'kontak'" x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="section-box rounded-2xl p-6">
+            <div class="flex items-center justify-between gap-3 mb-5">
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-800">Kontak &amp; Peta</h3>
+                    <p class="mt-0.5 text-xs text-zinc-500">Email, telepon, WhatsApp, media sosial, dan embed peta.</p>
+                </div>
+                <button type="button" wire:click="tambahSocialLink"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    Tambah Sosial
+                </button>
+            </div>
+
+            <form wire:submit="simpanKontak" class="space-y-4">
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Email</label>
+                        <input wire:model.defer="contactEmail" type="email"
+                            class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Telepon</label>
+                        <input wire:model.defer="contactPhone" type="text" placeholder="(021) 1234567"
+                            class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">WhatsApp</label>
+                        <input wire:model.defer="contactWhatsapp" type="text" placeholder="6281234567890"
+                            class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Alamat</label>
+                        <textarea wire:model.defer="contactAddress" rows="2"
+                            class="w-full resize-none rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
+                    </div>
+                </div>
+
+                {{-- Social links --}}
+                @if (count($contactSocialLinks))
+                    <div class="space-y-2.5">
+                        <p class="text-xs font-semibold text-zinc-600">Media Sosial</p>
+                        @foreach ($contactSocialLinks as $index => $social)
+                            <div wire:key="social-{{ $index }}"
+                                class="grid items-end gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 md:grid-cols-[1fr_2fr_auto]">
+                                <div>
+                                    <label class="block text-xs font-medium text-zinc-500 mb-1">Platform</label>
+                                    <input wire:model.defer="contactSocialLinks.{{ $index }}.label" type="text"
+                                        placeholder="Instagram"
+                                        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-zinc-500 mb-1">URL</label>
+                                    <input wire:model.defer="contactSocialLinks.{{ $index }}.url" type="url"
+                                        placeholder="https://instagram.com/prodi"
+                                        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
+                                </div>
+                                <button type="button" wire:click="hapusSocialLink({{ $index }})"
+                                    class="rounded-lg bg-rose-50 p-2 text-rose-600 hover:bg-rose-100">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div>
+                    <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Embed URL Google Maps</label>
+                    <textarea wire:model.defer="contactMapEmbedUrl" rows="2" placeholder="https://maps.google.com/maps?...&output=embed"
+                        class="w-full resize-none rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm font-mono shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
+                </div>
+
+                {{-- Map preview --}}
+                @if ($contactMapEmbedUrl)
+                    <div class="overflow-hidden rounded-xl border border-zinc-200">
+                        <iframe title="Preview Peta" class="h-48 w-full" src="{{ $contactMapEmbedUrl }}"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                @endif
+
+                <div class="flex justify-end pt-1">
+                    <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Simpan Kontak
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ════════════════════════════════
+         TAB: HIGHLIGHT
+    ════════════════════════════════ --}}
+    <div x-show="tab === 'highlight'" x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="section-box rounded-2xl p-6">
+            <div class="flex items-center justify-between gap-3 mb-5">
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-800">Highlight Cepat Beranda</h3>
+                    <p class="mt-0.5 text-xs text-zinc-500">Kartu highlight yang muncul di bawah hero beranda.</p>
+                </div>
+                <button type="button" wire:click="tambahQuickHighlight"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    Tambah
+                </button>
+            </div>
+
+            <form wire:submit="simpanQuickHighlights" class="space-y-3">
+                @foreach ($quickHighlights as $index => $item)
+                    <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200">
+                                #{{ $index + 1 }}
+                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" wire:click="pindahQuickHighlightKeAtas({{ $index }})"
+                                    class="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100" title="Naik">↑</button>
+                                <button type="button" wire:click="pindahQuickHighlightKeBawah({{ $index }})"
+                                    class="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100" title="Turun">↓</button>
+                                <button type="button" wire:click="hapusQuickHighlight({{ $index }})"
+                                    class="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100">Hapus</button>
+                            </div>
+                        </div>
+                        <div class="grid gap-3 md:grid-cols-2">
+                            <div>
+                                <label class="block text-xs font-medium text-zinc-500 mb-1">Judul</label>
+                                <input wire:model.defer="quickHighlights.{{ $index }}.title" type="text"
+                                    class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-zinc-500 mb-1">Label Tombol</label>
+                                <input wire:model.defer="quickHighlights.{{ $index }}.link_label" type="text"
+                                    class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-zinc-500 mb-1">Deskripsi</label>
+                                <textarea wire:model.defer="quickHighlights.{{ $index }}.description" rows="2"
+                                    class="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-zinc-500 mb-1">Link</label>
+                                <input wire:model.defer="quickHighlights.{{ $index }}.link" type="text"
+                                    placeholder="/laporan atau #statistik-beranda"
+                                    class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-mono outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-zinc-500 mb-1">Ikon</label>
+                                    <select wire:model.defer="quickHighlights.{{ $index }}.icon_key"
+                                        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100">
+                                        <option value="chart">Chart</option>
+                                        <option value="document">Document</option>
+                                        <option value="users">Users</option>
+                                        <option value="award">Award</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-zinc-500 mb-1">Warna</label>
+                                    <select wire:model.defer="quickHighlights.{{ $index }}.color_key"
+                                        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100">
+                                        <option value="blue">Biru</option>
+                                        <option value="violet">Violet</option>
+                                        <option value="emerald">Hijau</option>
+                                        <option value="amber">Amber</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="grid gap-3 md:grid-cols-2">
-                        <label class="text-sm">Judul
-                            <input wire:model.defer="quickHighlights.{{ $index }}.title" type="text"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                        </label>
-                        <label class="text-sm">Label Tombol
-                            <input wire:model.defer="quickHighlights.{{ $index }}.link_label" type="text"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                        </label>
-                        <label class="text-sm md:col-span-2">Deskripsi
-                            <textarea wire:model.defer="quickHighlights.{{ $index }}.description" rows="2"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
-                        </label>
-                        <label class="text-sm">Link Tujuan
-                            <input wire:model.defer="quickHighlights.{{ $index }}.link" type="text"
-                                placeholder="/laporan atau #statistik-beranda"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                        </label>
-                        <label class="text-sm">Ikon
-                            <select wire:model.defer="quickHighlights.{{ $index }}.icon_key"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                                <option value="chart">Chart</option>
-                                <option value="document">Document</option>
-                                <option value="users">Users</option>
-                                <option value="award">Award</option>
-                            </select>
-                        </label>
-                        <label class="text-sm">Warna
-                            <select wire:model.defer="quickHighlights.{{ $index }}.color_key"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                                <option value="blue">Biru</option>
-                                <option value="violet">Violet</option>
-                                <option value="emerald">Hijau</option>
-                                <option value="amber">Amber</option>
-                            </select>
-                        </label>
+                @endforeach
+
+                @if (empty($quickHighlights))
+                    <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-zinc-200 py-10 text-center">
+                        <p class="text-sm font-medium text-zinc-400">Belum ada highlight.</p>
                     </div>
-                    <div class="mt-3 flex justify-end">
-                        <button type="button" wire:click="hapusQuickHighlight({{ $index }})"
-                            class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">Hapus</button>
-                    </div>
+                @endif
+
+                <div class="flex justify-end pt-1">
+                    <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Simpan Highlight
+                    </button>
                 </div>
-            @endforeach
-
-            @if (empty($quickHighlights))
-                <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                    Belum ada highlight cepat. Tambahkan data baru lalu klik publikasi.
-                </div>
-            @endif
-
-            <button type="submit"
-                class="rounded-2xl bg-linear-to-r from-indigo-600 to-blue-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-100">Publikasikan
-                Highlight Cepat</button>
-        </form>
-    </section>
-
-    <section class="section-box rounded-3xl p-6 md:p-8">
-        <div class="flex items-center justify-between gap-3">
-            <h3 class="text-lg font-bold">Foto Galeri</h3>
-            <button type="button" wire:click="tambahGalleryItem"
-                class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Tambah
-                Foto</button>
+            </form>
         </div>
+    </div>
 
-        <div class="mt-4 flex flex-wrap gap-2">
+    {{-- ════════════════════════════════
+         TAB: GALERI
+    ════════════════════════════════ --}}
+    <div x-show="tab === 'galeri'" x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="section-box rounded-2xl p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-800">Foto Galeri</h3>
+                    <p class="mt-0.5 text-xs text-zinc-500">{{ count($galleryItems) }} foto tersimpan.</p>
+                </div>
+                <button type="button" wire:click="tambahGalleryItem"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-300 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    Tambah Foto
+                </button>
+            </div>
+
+            {{-- Category filter --}}
             @php
-                $adminGalleryKategori = collect([
-                    'Prestasi Mahasiswa',
-                    'Kegiatan Akademik',
-                    'Kegiatan Mahasiswa',
-                    'Pengabdian Masyarakat',
-                    'Kerjasama & MoU',
-                ])
-                    ->merge(collect($galleryItems)->pluck('category')->filter())
-                    ->unique()
-                    ->values();
+                $adminGalleryKategori = collect(['Prestasi Mahasiswa','Kegiatan Akademik','Kegiatan Mahasiswa','Pengabdian Masyarakat','Kerjasama & MoU'])
+                    ->merge(collect($galleryItems)->pluck('category')->filter())->unique()->values();
             @endphp
-            <button type="button" wire:click="pilihKategoriGaleri('Semua')"
-                class="rounded-full px-4 py-2 text-xs font-semibold {{ $galeriKategoriDipilih === 'Semua' ? 'bg-(--accent) text-white' : 'border border-slate-300 bg-white text-slate-700' }}">Semua</button>
-            @foreach ($adminGalleryKategori as $kategori)
-                <button type="button" wire:click="pilihKategoriGaleri('{{ $kategori }}')"
-                    class="rounded-full px-4 py-2 text-xs font-semibold {{ $galeriKategoriDipilih === $kategori ? 'bg-(--accent) text-white' : 'border border-slate-300 bg-white text-slate-700' }}">{{ $kategori }}</button>
-            @endforeach
+            <div class="mb-4 flex flex-wrap gap-2">
+                <button type="button" wire:click="pilihKategoriGaleri('Semua')"
+                    class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all {{ $galeriKategoriDipilih === 'Semua' ? 'bg-indigo-600 text-white shadow-sm' : 'border border-zinc-300 bg-white text-zinc-600 hover:border-indigo-300 hover:text-indigo-700' }}">
+                    Semua
+                </button>
+                @foreach ($adminGalleryKategori as $kat)
+                    <button type="button" wire:click="pilihKategoriGaleri('{{ $kat }}')"
+                        class="rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all {{ $galeriKategoriDipilih === $kat ? 'bg-indigo-600 text-white shadow-sm' : 'border border-zinc-300 bg-white text-zinc-600 hover:border-indigo-300 hover:text-indigo-700' }}">
+                        {{ $kat }}
+                    </button>
+                @endforeach
+            </div>
+
+            <form wire:submit="simpanGaleri" class="space-y-3">
+                @foreach ($galleryItems as $index => $item)
+                    @continue($galeriKategoriDipilih !== 'Semua' && data_get($item,'category') !== $galeriKategoriDipilih)
+                    @php $galleryUpload = $galleryImageFiles[$index] ?? null; @endphp
+                    <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                        <div class="flex gap-4">
+                            {{-- Thumbnail --}}
+                            <img src="{{ $galleryUpload ? $galleryUpload->temporaryUrl() : data_get($item,'image_url') }}"
+                                alt="Preview"
+                                class="h-24 w-36 flex-shrink-0 rounded-lg border border-zinc-200 object-cover shadow-sm"/>
+                            {{-- Fields --}}
+                            <div class="min-w-0 flex-1 grid gap-3 md:grid-cols-2">
+                                <div>
+                                    <label class="block text-xs font-medium text-zinc-500 mb-1">Judul</label>
+                                    <input wire:model.defer="galleryItems.{{ $index }}.title" type="text"
+                                        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-zinc-500 mb-1">Kategori</label>
+                                    <select wire:model.defer="galleryItems.{{ $index }}.category"
+                                        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100">
+                                        @foreach ($adminGalleryKategori as $ko)
+                                            <option value="{{ $ko }}">{{ $ko }}</option>
+                                        @endforeach
+                                        <option value="__new__">+ Kategori Baru</option>
+                                    </select>
+                                    @if ((string) data_get($item,'category') === '__new__')
+                                        <input wire:model.defer="galleryItems.{{ $index }}.custom_category" type="text"
+                                            placeholder="Nama kategori baru"
+                                            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
+                                        @error("galleryItems.$index.custom_category")
+                                            <p class="mt-0.5 text-xs text-rose-600">{{ $message }}</p>
+                                        @enderror
+                                    @endif
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-zinc-500 mb-1">Deskripsi <span class="text-zinc-400">(tampil di modal)</span></label>
+                                    <textarea wire:model.defer="galleryItems.{{ $index }}.description" rows="2"
+                                        placeholder="Keterangan singkat tentang foto ini..."
+                                        class="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"></textarea>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-zinc-500 mb-1">Ganti Gambar</label>
+                                    <input wire:model="galleryImageFiles.{{ $index }}" type="file" accept="image/*"
+                                        class="w-full rounded-lg border border-dashed border-indigo-300 bg-indigo-50/40 px-3 py-2 text-xs text-indigo-700"/>
+                                </div>
+                            </div>
+                            {{-- Delete --}}
+                            <button type="button" wire:click="hapusGalleryItem({{ $index }})"
+                                class="flex-shrink-0 self-start rounded-lg bg-rose-50 p-2 text-rose-600 hover:bg-rose-100">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+
+                @if (collect($galleryItems)->filter(fn($item) => $galeriKategoriDipilih === 'Semua' || data_get($item,'category') === $galeriKategoriDipilih)->isEmpty())
+                    <div class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-zinc-200 py-10 text-center">
+                        <p class="text-sm font-medium text-zinc-400">Belum ada foto di kategori ini.</p>
+                    </div>
+                @endif
+
+                <div class="flex justify-end pt-1">
+                    <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Publikasikan Galeri
+                    </button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <form wire:submit="simpanGaleri" class="mt-4 space-y-4">
-            @foreach ($galleryItems as $index => $item)
-                @continue($galeriKategoriDipilih !== 'Semua' && data_get($item, 'category') !== $galeriKategoriDipilih)
-                @php $galleryUpload = $galleryImageFiles[$index] ?? null; @endphp
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div class="grid gap-3 md:grid-cols-2">
-                        <label class="text-sm">Judul
-                            <input wire:model.defer="galleryItems.{{ $index }}.title" type="text"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                        </label>
-                        <label class="text-sm">Kategori
-                            <select wire:model.defer="galleryItems.{{ $index }}.category"
-                                class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                                @foreach ($adminGalleryKategori as $kategoriOption)
-                                    <option value="{{ $kategoriOption }}">{{ $kategoriOption }}</option>
-                                @endforeach
-                                <option value="__new__">+ Tambah Kategori Baru</option>
-                            </select>
-
-                            @if ((string) data_get($item, 'category') === '__new__')
-                                <input wire:model.defer="galleryItems.{{ $index }}.custom_category"
-                                    type="text" placeholder="Nama kategori baru"
-                                    class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                                @error("galleryItems.$index.custom_category")
-                                    <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
-                                @enderror
-                            @endif
-
-                            <p class="mt-1 text-xs text-slate-500">Pilih dari daftar, atau tambah kategori baru.</p>
-                        </label>
-                        <label class="text-sm">Upload Gambar Galeri
-                            <input wire:model="galleryImageFiles.{{ $index }}" type="file"
-                                accept="image/*"
-                                class="mt-2 w-full rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 px-3 py-2 text-sm text-indigo-700" />
-                        </label>
-                    </div>
-                    <div class="mt-3 flex items-center justify-between gap-3">
-                        <img src="{{ $galleryUpload ? $galleryUpload->temporaryUrl() : data_get($item, 'image_url') }}"
-                            alt="Preview Galeri" class="h-24 w-40 rounded-xl border border-slate-200 object-cover" />
-                        <span
-                            class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">{{ data_get($item, 'category') }}</span>
-                        <button type="button" wire:click="hapusGalleryItem({{ $index }})"
-                            class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">Hapus</button>
-                    </div>
-                </div>
-            @endforeach
-
-            @if (collect($galleryItems)->filter(fn($item) => $galeriKategoriDipilih === 'Semua' || data_get($item, 'category') === $galeriKategoriDipilih)->isEmpty())
-                <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                    Belum ada foto pada kategori ini di panel admin.
-                </div>
-            @endif
-
-            <button type="submit"
-                class="rounded-2xl bg-linear-to-r from-emerald-600 to-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-100">Publikasikan
-                Galeri</button>
-        </form>
-    </section>
 </div>

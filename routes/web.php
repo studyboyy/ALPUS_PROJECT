@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Pages\BerandaPage;
+use App\Livewire\Pages\AdminDashboardPage;
 use App\Livewire\Pages\AdminDashboardDataPage;
 use App\Livewire\Pages\AdminBerandaContentPage;
 use App\Livewire\Pages\AdminAnnualReportPage;
@@ -43,6 +44,7 @@ Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logo
 Route::redirect('/admin/login', '/login');
 
 Route::middleware('admin.auth')->group(function (): void {
+    Route::get('/admin', AdminDashboardPage::class)->name('admin.dashboard');
     Route::get('/admin/dashboard-data', AdminDashboardDataPage::class)->name('admin.dashboard-data');
     Route::get('/admin/laporan-tahunan', AdminAnnualReportPage::class)->name('admin.annual-report');
     Route::get('/admin/program-agenda', AdminProgramAgendaPage::class)->name('admin.program-agenda');

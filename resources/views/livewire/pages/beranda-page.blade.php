@@ -12,11 +12,9 @@
             @php $namaProdiSuffix = trim((string) data_get($homeContent, 'kaprodi_name', '')); @endphp
             <p class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]">
                 Laporan Tahunan {{ $tahunLaporanAktif }}</p>
-            <h2 class="mt-4 display-font text-4xl leading-tight md:text-6xl">Laporan Tahunan Kepala Program Studi</h2>
-            <p class="mt-3 text-xl font-semibold text-sky-100">Menuju Prodi Unggul, Inovatif, dan Berdaya Saing</p>
-            <p class="mt-4 text-sm leading-relaxed text-slate-100 md:text-base">Portal resmi untuk ringkasan kinerja,
-                capaian akademik, statistik, dokumen pendukung, dan dokumentasi kegiatan Program
-                Studi{{ $namaProdiSuffix !== '' ? ' ' . $namaProdiSuffix : '' }}.</p>
+            <h2 class="mt-4 display-font text-4xl leading-tight md:text-6xl">{{ data_get($homeContent, 'header_title_text', 'Laporan Tahunan Kepala Program Studi') }}</h2>
+            <p class="mt-3 text-xl font-semibold text-sky-100">{{ data_get($homeContent, 'kaprodi_title', 'Kepala Program Studi') }}</p>
+            <p class="mt-4 text-sm leading-relaxed text-slate-100 md:text-base">{{ data_get($homeContent, 'kaprodi_quote', 'Portal resmi untuk ringkasan kinerja, capaian akademik, statistik, dokumen pendukung, dan dokumentasi kegiatan Program Studi.') }}{{ $namaProdiSuffix !== '' ? ' — ' . $namaProdiSuffix : '' }}</p>
             <div class="mt-7 flex flex-wrap gap-3">
                 <a wire:navigate.hover href="{{ route('laporan') }}"
                     class="rounded-full bg-white px-5 py-3 text-sm font-bold text-sky-800 transition hover:-translate-y-0.5">Lihat
@@ -390,43 +388,70 @@
         </article>
 
         <article class="section-box rounded-2xl p-6">
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-(--olive)">Kutipan Kepala Prodi</p>
-            <p class="mt-4 text-sm leading-relaxed text-(--muted)">"{{ $homeContent['kaprodi_quote'] }}"</p>
+            <p class="text-[11px] font-bold uppercase tracking-widest text-(--olive)">Kutipan Kepala Prodi</p>
+            <blockquote class="mt-4 border-l-3 border-blue-200 pl-4 text-sm italic leading-relaxed text-(--muted)">
+                "{{ $homeContent['kaprodi_quote'] }}"
+            </blockquote>
             <div class="mt-5 flex items-center gap-3">
-                <img src="{{ $homeContent['kaprodi_photo_url'] }}" alt="Kepala Prodi"
-                    class="h-12 w-12 rounded-full object-cover">
+                <img src="{{ $homeContent['kaprodi_photo_url'] }}" alt="{{ $homeContent['kaprodi_name'] }}"
+                    class="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow-sm">
                 <div>
-                    <p class="text-sm font-semibold">{{ $homeContent['kaprodi_name'] }}</p>
+                    <p class="text-sm font-bold text-slate-800">{{ $homeContent['kaprodi_name'] }}</p>
                     <p class="text-xs text-(--muted)">{{ $homeContent['kaprodi_title'] }}</p>
                 </div>
             </div>
-            <div class="mt-5 rounded-xl border border-(--line) bg-slate-50 p-3 text-xs text-(--muted)">
-                Total mitra aktif: <strong>{{ $mitraDanKegiatanStats['mitraAktif'] ?? 0 }}</strong> | Kegiatan
-                eksternal {{ $mitraDanKegiatanStats['tahun'] ?? $tahunDipilih }}:
-                <strong>{{ $mitraDanKegiatanStats['kegiatanEksternal'] ?? 0 }}</strong>
+            <div class="mt-5 grid grid-cols-2 gap-3">
+                <div class="rounded-xl border border-(--line) bg-slate-50 p-3 text-center">
+                    <p class="text-lg font-extrabold text-(--accent)">{{ $mitraDanKegiatanStats['mitraAktif'] ?? 0 }}</p>
+                    <p class="mt-0.5 text-[11px] font-semibold text-slate-500">Mitra Aktif</p>
+                </div>
+                <div class="rounded-xl border border-(--line) bg-slate-50 p-3 text-center">
+                    <p class="text-lg font-extrabold text-(--olive)">{{ $mitraDanKegiatanStats['kegiatanEksternal'] ?? 0 }}</p>
+                    <p class="mt-0.5 text-[11px] font-semibold text-slate-500">Kegiatan {{ $mitraDanKegiatanStats['tahun'] ?? $tahunDipilih }}</p>
+                </div>
             </div>
         </article>
     </section>
 
     <section class="section-box rounded-2xl p-6 md:p-8">
         <div class="mb-5 flex items-center justify-between gap-3">
-            <h3 class="display-font text-3xl">Galeri Pilihan Beranda</h3>
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-widest text-(--olive)">Dokumentasi Terbaru</p>
+                <h3 class="display-font mt-1 text-3xl">Galeri Kegiatan</h3>
+            </div>
             <a wire:navigate.hover href="{{ route('galeri') }}"
-                class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">Lihat Semua</a>
+                class="btn-outline !py-2 !px-4 !text-xs">
+                Lihat Semua
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </a>
         </div>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach (collect($homeContent['gallery_items'])->reverse()->take(6) as $item)
-                <article class="overflow-hidden rounded-xl border border-(--line)">
-                    <img src="{{ data_get($item, 'image_url') }}" alt="{{ data_get($item, 'title') }}"
-                        class="h-52 w-full object-cover">
-                    <p class="px-4 py-3 text-sm font-semibold">{{ data_get($item, 'title') }}</p>
-                </article>
+                <a wire:navigate.hover href="{{ route('galeri') }}"
+                    class="group overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-blue-200">
+                    <div class="relative overflow-hidden">
+                        <img src="{{ data_get($item, 'image_url') }}" alt="{{ data_get($item, 'title') }}"
+                            class="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                        <span class="absolute left-3 top-3 rounded-full bg-slate-900/55 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                            {{ data_get($item, 'category', '') }}
+                        </span>
+                    </div>
+                    <div class="px-4 py-3">
+                        <p class="text-sm font-semibold leading-snug text-slate-800">{{ data_get($item, 'title') }}</p>
+                        @if (data_get($item, 'description'))
+                            <p class="mt-0.5 line-clamp-1 text-xs text-(--muted)">{{ data_get($item, 'description') }}</p>
+                        @endif
+                    </div>
+                </a>
             @endforeach
         </div>
-        <div class="mt-5 text-center">
-            <a wire:navigate.hover href="{{ route('galeri') }}"
-                class="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-indigo-600 to-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-200">Lihat
-                Selengkapnya</a>
+        <div class="mt-6 text-center">
+            <a wire:navigate.hover href="{{ route('galeri') }}" class="btn-primary">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Lihat Galeri Lengkap
+            </a>
         </div>
     </section>
 
@@ -540,24 +565,40 @@
                     </div>
                 </div>
                 <form wire:submit="kirimUmpanBalik"
-                    class="grid gap-3 rounded-2xl border border-(--line) bg-slate-50 p-5">
+                    class="space-y-4 rounded-2xl border border-(--line) bg-white p-6 shadow-sm">
                     @if (session()->has('contact_status'))
-                        <div
-                            class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                            {{ session('contact_status') }}
+                        <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                            <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <p class="text-sm font-medium text-emerald-800">{{ session('contact_status') }}</p>
                         </div>
                     @endif
-                    <input wire:model.defer="feedbackName" type="text" placeholder="Nama"
-                        class="rounded-xl border border-(--line) bg-white px-4 py-3 text-sm outline-none focus:border-(--accent)">
-                    <input wire:model.defer="feedbackEmail" type="email" placeholder="Email"
-                        class="rounded-xl border border-(--line) bg-white px-4 py-3 text-sm outline-none focus:border-(--accent)">
-                    <input wire:model.defer="feedbackSubject" type="text" placeholder="Subjek"
-                        class="rounded-xl border border-(--line) bg-white px-4 py-3 text-sm outline-none focus:border-(--accent)">
-                    <textarea wire:model.defer="feedbackMessage" rows="5" placeholder="Pesan / Saran"
-                        class="rounded-xl border border-(--line) bg-white px-4 py-3 text-sm outline-none focus:border-(--accent)"></textarea>
-                    <button type="submit"
-                        class="rounded-full bg-linear-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-200 transition hover:-translate-y-0.5 hover:shadow-lg">Kirim
-                        Umpan Balik</button>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-slate-600">Nama</label>
+                            <input wire:model.defer="feedbackName" type="text" placeholder="Nama lengkap Anda"
+                                class="form-input">
+                        </div>
+                        <div>
+                            <label class="mb-1.5 block text-xs font-semibold text-slate-600">Email</label>
+                            <input wire:model.defer="feedbackEmail" type="email" placeholder="email@contoh.com"
+                                class="form-input">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-semibold text-slate-600">Subjek</label>
+                        <input wire:model.defer="feedbackSubject" type="text" placeholder="Topik umpan balik"
+                            class="form-input">
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-semibold text-slate-600">Pesan / Saran</label>
+                        <textarea wire:model.defer="feedbackMessage" rows="5" placeholder="Tuliskan pesan atau saran Anda…"
+                            class="form-input resize-none"></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary w-full">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        Kirim Umpan Balik
+                    </button>
                 </form>
             </div>
         </div>
