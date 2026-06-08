@@ -81,10 +81,7 @@
 
         body {
             font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-            background:
-                radial-gradient(ellipse at 5% 0%, #dbeafe 0%, transparent 40%),
-                radial-gradient(ellipse at 95% 5%, #ccfbf1 0%, transparent 35%),
-                var(--bg-main);
+            background: #ffffff;
             color: var(--ink);
             -webkit-font-smoothing: antialiased;
         }
@@ -176,6 +173,77 @@
         .pill-inactive { background: #fff; color: #475569; border: 1.5px solid var(--line); }
         .pill-inactive:hover { border-color: var(--accent); color: var(--accent); }
 
+        /* ── Aurora orbs ── */
+        .aurora-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.45;
+            pointer-events: none;
+            z-index: 0;
+            will-change: transform;
+        }
+        .aurora-orb-1 {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, #bfdbfe, #93c5fd, transparent 70%);
+            top: -120px; left: -160px;
+            animation: orb-drift-1 18s ease-in-out infinite alternate;
+        }
+        .aurora-orb-2 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, #bfdbfe, #60a5fa, transparent 70%);
+            top: 10vh; right: -140px;
+            animation: orb-drift-2 22s ease-in-out infinite alternate;
+        }
+        .aurora-orb-3 {
+            width: 420px; height: 420px;
+            background: radial-gradient(circle, #dbeafe, #93c5fd, transparent 70%);
+            bottom: 15vh; left: 20%;
+            animation: orb-drift-3 26s ease-in-out infinite alternate;
+        }
+        .aurora-orb-4 {
+            width: 360px; height: 360px;
+            background: radial-gradient(circle, #eff6ff, #bfdbfe, transparent 70%);
+            bottom: -80px; right: 10%;
+            animation: orb-drift-4 20s ease-in-out infinite alternate;
+        }
+        @keyframes orb-drift-1 {
+            0%   { transform: translate(0, 0) scale(1); }
+            33%  { transform: translate(60px, 80px) scale(1.08); }
+            66%  { transform: translate(-40px, 120px) scale(0.95); }
+            100% { transform: translate(80px, 40px) scale(1.05); }
+        }
+        @keyframes orb-drift-2 {
+            0%   { transform: translate(0, 0) scale(1); }
+            33%  { transform: translate(-80px, 60px) scale(1.1); }
+            66%  { transform: translate(-40px, -80px) scale(0.92); }
+            100% { transform: translate(-100px, 40px) scale(1.06); }
+        }
+        @keyframes orb-drift-3 {
+            0%   { transform: translate(0, 0) scale(1); }
+            50%  { transform: translate(100px, -60px) scale(1.12); }
+            100% { transform: translate(-60px, -100px) scale(0.94); }
+        }
+        @keyframes orb-drift-4 {
+            0%   { transform: translate(0, 0) scale(1); }
+            40%  { transform: translate(-70px, -50px) scale(1.08); }
+            100% { transform: translate(60px, -90px) scale(0.97); }
+        }
+
+        /* ── Page transition ── */
+        #page-content {
+            animation: page-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes page-enter {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .page-leaving {
+            opacity: 0 !important;
+            transform: translateY(-8px) !important;
+            transition: opacity 0.18s ease, transform 0.18s ease !important;
+        }
+
         /* Progress bar */
         #lw-progress {
             position: fixed; top: 0; left: 0;
@@ -191,9 +259,15 @@
 </head>
 
 <body>
+    {{-- Aurora orbs background --}}
+    <div class="aurora-orb aurora-orb-1" aria-hidden="true"></div>
+    <div class="aurora-orb aurora-orb-2" aria-hidden="true"></div>
+    <div class="aurora-orb aurora-orb-3" aria-hidden="true"></div>
+    <div class="aurora-orb aurora-orb-4" aria-hidden="true"></div>
+
     <div id="lw-progress" aria-hidden="true"></div>
 
-    <header class="sticky top-0 z-50 border-b border-(--line)/80 bg-(--bg-main)/90 backdrop-blur-md">
+    <header class="sticky top-0 z-50 border-b border-(--line)/80 bg-white/80 backdrop-blur-md">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
             <a wire:navigate.hover href="{{ route('home') }}" class="flex items-center gap-3">
                 @if (!empty($homeContent['header_logo_url']))
@@ -210,6 +284,7 @@
                 </div>
             </a>
 
+            {{-- Desktop nav --}}
             <nav class="hidden flex-wrap items-center gap-2 text-sm font-semibold lg:flex">
                 <a wire:navigate.hover href="{{ route('home') }}"
                     class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">Beranda</a>
@@ -226,26 +301,42 @@
                 <a wire:navigate.hover href="{{ route('kontak') }}"
                     class="nav-link {{ request()->routeIs('kontak*') ? 'active' : '' }}">Kontak</a>
             </nav>
+
+            {{-- Mobile hamburger --}}
+            <button type="button" id="mobile-menu-btn"
+                class="flex h-9 w-9 items-center justify-center rounded-xl border border-(--line) bg-white text-slate-600 transition hover:bg-slate-50 lg:hidden"
+                aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="mobile-menu">
+                <svg id="hamburger-icon" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <svg id="close-icon" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
-        <div class="mx-auto flex max-w-7xl flex-wrap gap-2 px-4 pb-4 lg:hidden md:px-8">
-            <a wire:navigate.hover href="{{ route('home') }}"
-                class="nav-link {{ request()->routeIs('home') ? 'active' : '' }} text-xs">Beranda</a>
-            <a wire:navigate.hover href="{{ route('profil') }}"
-                class="nav-link {{ request()->routeIs('profil*') ? 'active' : '' }} text-xs">Profil</a>
-            <a wire:navigate.hover href="{{ route('laporan') }}"
-                class="nav-link {{ request()->routeIs('laporan*') ? 'active' : '' }} text-xs">Laporan</a>
-            <a wire:navigate.hover href="{{ route('statistik') }}"
-                class="nav-link {{ request()->routeIs('statistik*') ? 'active' : '' }} text-xs">Statistik</a>
-            <a wire:navigate.hover href="{{ route('dokumen') }}"
-                class="nav-link {{ request()->routeIs('dokumen*') ? 'active' : '' }} text-xs">Dokumen</a>
-            <a wire:navigate.hover href="{{ route('galeri') }}"
-                class="nav-link {{ request()->routeIs('galeri*') ? 'active' : '' }} text-xs">Galeri</a>
-            <a wire:navigate.hover href="{{ route('kontak') }}"
-                class="nav-link {{ request()->routeIs('kontak*') ? 'active' : '' }} text-xs">Kontak</a>
+
+        {{-- Mobile menu --}}
+        <div id="mobile-menu" class="hidden border-t border-(--line) bg-white/95 backdrop-blur-sm lg:hidden">
+            <nav class="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 md:px-8">
+                <a wire:navigate.hover href="{{ route('home') }}"
+                    class="nav-link {{ request()->routeIs('home') ? 'active' : '' }} text-sm">Beranda</a>
+                <a wire:navigate.hover href="{{ route('profil') }}"
+                    class="nav-link {{ request()->routeIs('profil*') ? 'active' : '' }} text-sm">Profil</a>
+                <a wire:navigate.hover href="{{ route('laporan') }}"
+                    class="nav-link {{ request()->routeIs('laporan*') ? 'active' : '' }} text-sm">Laporan</a>
+                <a wire:navigate.hover href="{{ route('statistik') }}"
+                    class="nav-link {{ request()->routeIs('statistik*') ? 'active' : '' }} text-sm">Statistik</a>
+                <a wire:navigate.hover href="{{ route('dokumen') }}"
+                    class="nav-link {{ request()->routeIs('dokumen*') ? 'active' : '' }} text-sm">Dokumen</a>
+                <a wire:navigate.hover href="{{ route('galeri') }}"
+                    class="nav-link {{ request()->routeIs('galeri*') ? 'active' : '' }} text-sm">Galeri</a>
+                <a wire:navigate.hover href="{{ route('kontak') }}"
+                    class="nav-link {{ request()->routeIs('kontak*') ? 'active' : '' }} text-sm">Kontak</a>
+            </nav>
         </div>
     </header>
 
-    <main class="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
+    <main id="page-content" class="relative z-10 mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
         @if (isset($slot))
             {{ $slot }}
         @else
@@ -253,7 +344,7 @@
         @endif
     </main>
 
-    <footer class="mt-16 border-t border-(--line) bg-white/80 backdrop-blur-sm">
+    <footer class="relative z-10 mt-16 border-t border-(--line) bg-white/80 backdrop-blur-sm">
         <div class="mx-auto max-w-7xl px-4 py-10 md:px-8">
             <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div>
@@ -280,24 +371,354 @@
         </div>
     </footer>
 
+    {{-- ── Global Gallery Lightbox (direct child of body — no stacking context issues) ── --}}
+    <div id="gallery-lightbox"
+        x-data="{
+            open: false,
+            image: '',
+            title: '',
+            category: '',
+            description: '',
+            init() {
+                window.addEventListener('gallery-modal-open', (e) => {
+                    this.image       = e.detail.image;
+                    this.title       = e.detail.title;
+                    this.category    = e.detail.category;
+                    this.description = e.detail.description || '';
+                    this.open        = true;
+                    document.body.style.overflow = 'hidden';
+                });
+                window.addEventListener('gallery-modal-close', () => this.close());
+            },
+            close() {
+                this.open = false;
+                document.body.style.overflow = '';
+            }
+        }"
+        x-init="init()"
+        @keydown.escape.window="close()">
+
+        {{-- Backdrop --}}
+        <div
+            x-show="open"
+            x-transition:enter="transition duration-250 ease-out"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition duration-200 ease-in"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="close()"
+            style="display:none; position:fixed; inset:0; background:rgba(3,7,18,0.82); z-index:9998;">
+        </div>
+
+        {{-- Modal card --}}
+        <div
+            x-show="open"
+            x-transition:enter="transition duration-250 ease-out"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-3"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition duration-180 ease-in"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            style="display:none; position:fixed; inset:0; z-index:9999;">
+
+            {{-- Centering layer — always flex, not toggled by Alpine --}}
+            <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:1.25rem;">
+
+                <div style="
+                    pointer-events:auto;
+                    position:relative;
+                    width:100%;
+                    max-width:720px;
+                    max-height:calc(100vh - 2.5rem);
+                    display:flex;
+                    flex-direction:column;
+                    overflow:hidden;
+                    border-radius:1.25rem;
+                    background:#ffffff;
+                    box-shadow:
+                        0 0 0 1px rgba(255,255,255,0.08),
+                        0 32px 80px rgba(0,0,0,0.55),
+                        0 8px 24px rgba(0,0,0,0.3);
+                ">
+                    {{-- Header --}}
+                    <div style="
+                        display:flex; align-items:center; gap:1rem;
+                        padding:1rem 1.25rem;
+                        border-bottom:1px solid #f1f5f9;
+                        background:#fff;
+                        flex-shrink:0;
+                    ">
+                        {{-- Photo icon --}}
+                        <div style="
+                            width:2.25rem; height:2.25rem; flex-shrink:0;
+                            border-radius:.625rem;
+                            background:linear-gradient(135deg,#dbeafe,#eff6ff);
+                            display:flex; align-items:center; justify-content:center;
+                        ">
+                            <svg style="width:1.1rem;height:1.1rem;color:#2563eb;" fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        {{-- Title + category --}}
+                        <div style="min-width:0; flex:1;">
+                            <p style="font-size:.875rem; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3;" x-text="title"></p>
+                            <p style="margin-top:.15rem; font-size:.6875rem; font-weight:600; text-transform:uppercase; letter-spacing:.12em; color:#94a3b8;" x-text="category"></p>
+                        </div>
+                        {{-- Close button --}}
+                        <button type="button" @click="close()"
+                            style="
+                                flex-shrink:0;
+                                width:2rem; height:2rem;
+                                border-radius:.5rem;
+                                border:1px solid #e2e8f0;
+                                background:#f8fafc;
+                                cursor:pointer;
+                                display:flex; align-items:center; justify-content:center;
+                                color:#64748b;
+                                transition:all .15s;
+                            "
+                            onmouseover="this.style.background='#fee2e2';this.style.borderColor='#fca5a5';this.style.color='#ef4444'"
+                            onmouseout="this.style.background='#f8fafc';this.style.borderColor='#e2e8f0';this.style.color='#64748b'"
+                            aria-label="Tutup">
+                            <svg style="width:.9rem;height:.9rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    {{-- Image area --}}
+                    <div style="flex:1; overflow:hidden; background:#f8fafc; padding:.875rem; min-height:0;">
+                        <div style="overflow:hidden; border-radius:.875rem; background:#020617; box-shadow:0 2px 12px rgba(0,0,0,.25);">
+                            <img :src="image" :alt="title"
+                                style="display:block; width:100%; max-height:58vh; object-fit:contain;">
+                        </div>
+                    </div>
+
+                    {{-- Footer --}}
+                    <div style="
+                        display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem;
+                        padding:.875rem 1.25rem;
+                        border-top:1px solid #f1f5f9;
+                        background:#fafafa;
+                        flex-shrink:0;
+                    ">
+                        <div x-show="description !== ''" style="min-width:0; flex:1; display:flex; align-items:flex-start; gap:.5rem;">
+                            <svg style="width:.875rem;height:.875rem;flex-shrink:0;margin-top:.1rem;color:#94a3b8;" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p x-text="description" style="font-size:.75rem; color:#64748b; line-height:1.5;"></p>
+                        </div>
+                        <a :href="image" target="_blank" rel="noreferrer"
+                            style="
+                                margin-left:auto; flex-shrink:0;
+                                display:inline-flex; align-items:center; gap:.4rem;
+                                padding:.5rem 1.125rem;
+                                border-radius:9999px;
+                                background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+                                color:#fff;
+                                font-size:.75rem; font-weight:600;
+                                text-decoration:none;
+                                box-shadow:0 3px 12px rgba(37,99,235,.35);
+                                transition:transform .15s, box-shadow .15s;
+                            "
+                            onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 18px rgba(37,99,235,.45)'"
+                            onmouseout="this.style.transform='';this.style.boxShadow='0 3px 12px rgba(37,99,235,.35)'">
+                            <svg style="width:.8rem;height:.8rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                            Buka Penuh
+                        </a>
+                    </div>
+
+                </div>
+            </div>{{-- /centering --}}
+        </div>{{-- /modal x-show --}}
+    </div>{{-- /gallery-lightbox --}}
+
     @livewireScriptConfig
     <script>
+        // ── Livewire navigate progress bar + page transition ──
         const lwProgress = document.getElementById('lw-progress');
 
         document.addEventListener('livewire:navigate', () => {
             lwProgress.classList.remove('is-done');
             lwProgress.classList.add('is-loading');
+            const content = document.getElementById('page-content');
+            if (content) content.classList.add('page-leaving');
         });
 
         document.addEventListener('livewire:navigated', () => {
             lwProgress.classList.remove('is-loading');
             lwProgress.classList.add('is-done');
-
             setTimeout(() => {
                 lwProgress.classList.remove('is-done');
                 lwProgress.style.width = '';
             }, 180);
+            const content = document.getElementById('page-content');
+            if (content) {
+                content.classList.remove('page-leaving');
+                content.style.animation = 'none';
+                content.offsetHeight;
+                content.style.animation = '';
+            }
+            // Close mobile menu on navigate
+            closeMobileMenu();
         });
+
+        // ── Mobile menu ──
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu    = document.getElementById('mobile-menu');
+        const hamburgerIcon = document.getElementById('hamburger-icon');
+        const closeIcon     = document.getElementById('close-icon');
+
+        function openMobileMenu() {
+            mobileMenu.classList.remove('hidden');
+            hamburgerIcon.classList.add('hidden');
+            closeIcon.classList.remove('hidden');
+            mobileMenuBtn.setAttribute('aria-expanded', 'true');
+        }
+        function closeMobileMenu() {
+            if (!mobileMenu) return;
+            mobileMenu.classList.add('hidden');
+            hamburgerIcon && hamburgerIcon.classList.remove('hidden');
+            closeIcon && closeIcon.classList.add('hidden');
+            mobileMenuBtn && mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        }
+        mobileMenuBtn && mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.contains('hidden') ? openMobileMenu() : closeMobileMenu();
+        });
+    </script>
+
+    {{-- ── Shared Chart.js Alpine component (used by beranda + statistik) ── --}}
+    <script>
+    window.__prodiChartRegistry = window.__prodiChartRegistry || {};
+
+    function prodiChartInit(chartId, initLabels, initDatasets, showLegend) {
+        return {
+            _chart: null,
+
+            buildDatasets(raw) {
+                return (raw || []).map(ds => ({
+                    label:                ds.label || '',
+                    data:                 ds.data  || [],
+                    borderColor:          ds.color || '#6366f1',
+                    backgroundColor:      ds.fill  ? (ds.color || '#6366f1') + '18' : 'transparent',
+                    fill:                 !!ds.fill,
+                    tension:              0.38,
+                    borderWidth:          ds.borderWidth || 2.5,
+                    borderDash:           ds.dash  || [],
+                    pointRadius:          3,
+                    pointHoverRadius:     6,
+                    pointBackgroundColor: ds.color || '#6366f1',
+                    pointBorderColor:     '#fff',
+                    pointBorderWidth:     1.5,
+                    yAxisID:              ds.yAxis || 'y',
+                }));
+            },
+
+            makeScales(datasets) {
+                const hasY2 = (datasets || []).some(ds => ds.yAxis === 'y2');
+                const s = {
+                    x: {
+                        grid:   { display: false },
+                        ticks:  { color:'#94a3b8', font:{size:11, family:"'Plus Jakarta Sans',sans-serif"}, maxRotation:0 },
+                        border: { display: false },
+                    },
+                    y: {
+                        position: 'left', grid: { color:'#f1f5f9' },
+                        ticks: { color:'#94a3b8', font:{size:11}, padding:6,
+                                 callback: v => Number.isInteger(v) ? v.toLocaleString('id-ID') : v },
+                        border: { display: false },
+                    },
+                };
+                if (hasY2) {
+                    s.y2 = {
+                        position:'right', grid:{ display:false },
+                        ticks:{ color:'#7c3aed', font:{size:11}, padding:6,
+                                callback: v => Number.isInteger(v) ? v : parseFloat(v).toFixed(2) },
+                        border:{ display:false },
+                    };
+                }
+                return s;
+            },
+
+            create(labels, datasets) {
+                const el = document.getElementById(chartId);
+                if (!el) return;
+
+                // Wait for Chart.js to be available (loaded via Vite bundle)
+                if (typeof window.Chart === 'undefined') {
+                    setTimeout(() => this.create(labels, datasets), 50);
+                    return;
+                }
+
+                // Destroy stale
+                const stale = window.__prodiChartRegistry[chartId] || window.Chart.getChart(el);
+                if (stale) { try { stale.destroy(); } catch(e){} }
+                delete window.__prodiChartRegistry[chartId];
+
+                const instance = new window.Chart(el, {
+                    type: 'line',
+                    data: { labels: labels || [], datasets: this.buildDatasets(datasets) },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        animation:  { duration: 350, easing: 'easeInOutQuart' },
+                        interaction: { mode:'index', intersect:false },
+                        plugins: {
+                            legend: {
+                                display: !!showLegend, position:'top', align:'end',
+                                labels: { boxWidth:10, boxHeight:10, borderRadius:5, useBorderRadius:true,
+                                          color:'#475569', padding:14,
+                                          font:{size:11, family:"'Plus Jakarta Sans',sans-serif", weight:'600'} },
+                            },
+                            tooltip: {
+                                backgroundColor:'#1e293b', titleColor:'#f8fafc', bodyColor:'#cbd5e1',
+                                borderColor:'#334155', borderWidth:1, cornerRadius:10, padding:12,
+                                titleFont:{size:12, weight:'700', family:"'Plus Jakarta Sans',sans-serif"},
+                                bodyFont: {size:11, family:"'Plus Jakarta Sans',sans-serif"},
+                                callbacks: { label: ctx => {
+                                    const v = ctx.parsed.y;
+                                    const f = Number.isInteger(v) ? v.toLocaleString('id-ID') : parseFloat(v).toFixed(2).replace('.',',');
+                                    return '  ' + ctx.dataset.label + ': ' + f;
+                                }},
+                            },
+                        },
+                        scales: this.makeScales(datasets),
+                    },
+                });
+
+                this._chart = instance;
+                window.__prodiChartRegistry[chartId] = instance;
+            },
+
+            // Called on initial Alpine mount
+            boot() {
+                this.create(initLabels, initDatasets);
+            },
+
+            // Called when Livewire dispatches 'prodi-chart-update' after re-render
+            onUpdate(detail) {
+                if (!detail || detail.chartId !== chartId) return;
+                const newDatasets = this.buildDatasets(detail.datasets || []);
+                if (this._chart) {
+                    // Rebuild scales in case y2 axis presence changed
+                    this._chart.data.labels   = detail.labels || [];
+                    this._chart.data.datasets = newDatasets;
+                    this._chart.options.scales = this.makeScales(detail.datasets || []);
+                    this._chart.update('active');
+                } else {
+                    this.create(detail.labels, detail.datasets);
+                }
+            },
+        };
+    }
+
+    // Purge all charts on Livewire SPA navigation
+    document.addEventListener('livewire:navigating', () => {
+        Object.values(window.__prodiChartRegistry).forEach(c => { try { c.destroy(); } catch(e){} });
+        window.__prodiChartRegistry = {};
+    });
     </script>
 </body>
 

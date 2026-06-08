@@ -238,8 +238,25 @@
         .admin-toast.hide { opacity: 0; transform: translateY(-8px); }
 
         @media (max-width: 1023px) {
-            .adm-sidebar { position: static; width: 100%; height: auto; }
+            .adm-sidebar {
+                position: fixed;
+                top: 0; left: 0; bottom: 0;
+                width: 224px;
+                z-index: 100;
+                transform: translateX(-100%);
+                transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+                box-shadow: 4px 0 24px rgba(0,0,0,.12);
+            }
+            .adm-sidebar.open { transform: translateX(0); }
             .adm-main { margin-left: 0; }
+            .adm-overlay {
+                display: none;
+                position: fixed; inset: 0;
+                background: rgba(0,0,0,.35);
+                backdrop-filter: blur(2px);
+                z-index: 99;
+            }
+            .adm-overlay.show { display: block; }
         }
     </style>
 </head>
@@ -261,8 +278,11 @@
         </div>
     @endif
 
+    {{-- Mobile overlay --}}
+    <div id="adm-overlay" class="adm-overlay" onclick="closeAdminSidebar()"></div>
+
     {{-- ── Sidebar ── --}}
-    <aside class="adm-sidebar">
+    <aside class="adm-sidebar" id="adm-sidebar">
         {{-- Brand --}}
         <div class="adm-brand">
             <div class="adm-brand-icon">
@@ -385,6 +405,13 @@
         {{-- Topbar --}}
         <header class="adm-topbar">
             <div class="flex items-center gap-3">
+                {{-- Mobile hamburger --}}
+                <button type="button" onclick="openAdminSidebar()"
+                    class="adm-topbar-action lg:hidden" aria-label="Buka menu">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
                 <span class="adm-topbar-title">{{ $adminPageTitle }}</span>
             </div>
             <div class="flex items-center gap-2">
@@ -440,6 +467,20 @@
             });
         });
     })();
+
+    // ── Mobile sidebar ──
+    function openAdminSidebar() {
+        document.getElementById('adm-sidebar').classList.add('open');
+        document.getElementById('adm-overlay').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeAdminSidebar() {
+        document.getElementById('adm-sidebar').classList.remove('open');
+        document.getElementById('adm-overlay').classList.remove('show');
+        document.body.style.overflow = '';
+    }
+    // Close on navigate
+    document.addEventListener('livewire:navigated', closeAdminSidebar);
     </script>
 </body>
 </html>

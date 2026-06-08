@@ -40,8 +40,15 @@
         @endforeach
     </div>
 
+    {{-- Loading state --}}
+    <div wire:loading wire:target="pilihKategori" class="mt-8 space-y-3">
+        @for ($i = 0; $i < 3; $i++)
+            <div class="h-20 animate-pulse rounded-xl bg-slate-100"></div>
+        @endfor
+    </div>
+
     {{-- ── Document list ── --}}
-    <div class="mt-8 space-y-8">
+    <div wire:loading.remove wire:target="pilihKategori" class="mt-8 space-y-8">
         @foreach ($documents->groupBy(fn($doc) => $doc->category ?: 'Dokumen Pendukung') as $category => $items)
             <div>
                 {{-- Category header --}}
@@ -107,5 +114,6 @@
             </div>
         @endif
     </div>
+    {{-- /wire:loading.remove --}}
 
 </section>

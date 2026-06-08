@@ -64,8 +64,16 @@
     {{-- ── Main content ── --}}
     <div class="space-y-6">
 
-        {{-- Header --}}
-        <div class="section-box rounded-2xl p-6 md:p-8">
+        {{-- Loading overlay saat ganti tahun --}}
+        <div wire:loading wire:target="pilihTahun" class="space-y-4">
+            <div class="h-40 animate-pulse rounded-2xl bg-slate-100"></div>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div class="h-32 animate-pulse rounded-2xl bg-slate-100"></div>
+                <div class="h-32 animate-pulse rounded-2xl bg-slate-100"></div>
+            </div>
+        </div>
+
+        <div wire:loading.remove wire:target="pilihTahun" class="space-y-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-widest text-(--olive)">Laporan Tahunan</p>
@@ -190,5 +198,6 @@
             </section>
         @endforeach
 
+        </div>{{-- /wire:loading.remove --}}
     </div>
 </div>

@@ -21,6 +21,10 @@ class StatistikPage extends Component
     public int $tahunDipilih = 0;
     public string $trendMode = 'year';
 
+    // Chart.js data exposed as public properties for $wire JS access
+    public array $chartJsA = ['labels' => [], 'datasets' => []];
+    public array $chartJsB = ['labels' => [], 'datasets' => []];
+
     // Chart A: Mahasiswa Aktif & Dosen Tetap (angka absolut besar)
     // Chart B: IPK Rata-rata & Publikasi (skala kecil, berbeda satuan)
 
@@ -467,20 +471,122 @@ class StatistikPage extends Component
             DashboardMonthlyStat::ensureYear((int) $statAktif->year, $statAktif->kpi ?? []);
         }
 
+        $activeYear = (int) ($statAktif?->year ?? $this->tahunDipilih);
+
         $trendVisual = $this->buildTrendFromHistory(
             $allStats->sortBy('year')->values(),
-            (int) ($statAktif?->year ?? $this->tahunDipilih),
+            $activeYear,
             $this->trendMode,
         );
 
-        $kinerjaTahunanBerjalan = DashboardMonthlyStat::summarizeYear((int) ($statAktif?->year ?? $this->tahunDipilih), $statAktif?->kpi ?? []);
+        // Chart.js-ready data (used by the new chart component)
+        $chartJsData = $this->buildChartJsData(
+            $allStats->sortBy('year')->values(),
+            $activeYear,
+            $this->trendMode,
+        );
+
+        // Expose as public properties (kept for backward compat with beranda page)
+        $this->chartJsA = data_get($chartJsData, 'chartA', ['labels'=>[],'datasets'=>[]]);
+        $this->chartJsB = data_get($chartJsData, 'chartB', ['labels'=>[],'datasets'=>[]]);
+
+        $kinerjaTahunanBerjalan = DashboardMonthlyStat::summarizeYear($activeYear, $statAktif?->kpi ?? []);
 
         return view('livewire.pages.statistik-page', [
-            'daftarTahun' => $allStats->pluck('year')->all(),
-            'statAktif' => $statAktif,
-            'trendVisual' => $trendVisual,
-            'programCount' => DashboardProgramItem::query()->where('year', $statAktif?->year)->count(),
-            'kinerjaTahunanBerjalan' => $kinerjaTahunanBerjalan,
+            'daftarTahun'             => $allStats->pluck('year')->all(),
+            'statAktif'               => $statAktif,
+            'trendVisual'             => $trendVisual,
+            'chartJsData'             => $chartJsData,
+            'programCount'            => DashboardProgramItem::query()->where('year', $statAktif?->year)->count(),
+            'kinerjaTahunanBerjalan'  => $kinerjaTahunanBerjalan,
         ]);
+    }
+
+    // ──────────────────────────────────────────────────
+    // Chart.js data builder
+    // ──────────────────────────────────────────────────
+
+    private function buildChartJsData(\Illuminate\Support\Collection $stats, int $activeYear, string $mode): array
+    {
+        $monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+        if ($mode === 'year') {
+            $annualKpi = $stats->firstWhere('year', $activeYear)?->kpi ?? [];
+            DashboardMonthlyStat::ensureYear($activeYear, $annualKpi);
+
+            $cutoff = $activeYear === (int) now()->format('Y') ? (int) now()->format('n') : 12;
+            $rows = DashboardMonthlyStat::query()
+                ->where('year', $activeYear)->orderBy('month')->get()
+                ->filter(fn($r) => $r->month <= $cutoff)->values();
+
+            if ($rows->isEmpty()) {
+                return $this->emptyChartJs('Per Bulan — ' . $activeYear);
+            }
+
+            $labels = $rows->map(fn($r) => $monthNames[(int)$r->month - 1])->all();
+            $mhs    = $rows->map(fn($r) => (float) data_get($r->kpi, 'mahasiswa_aktif', 0))->all();
+            $ipk    = $rows->map(fn($r) => (float) data_get($r->kpi, 'ipk', 0))->all();
+            $dos    = $rows->map(fn($r) => (float) data_get($r->kpi, 'dosen_tetap', 0))->all();
+            $pub    = []; $cum = 0.0;
+            foreach ($rows as $r) { $cum += (float) data_get($r->kpi,'publikasi',0); $pub[] = round($cum,1); }
+
+            return [
+                'rangeLabel' => 'Per Bulan — Tahun ' . $activeYear,
+                'trendMode'  => 'year',
+                // Two separate charts (statistik page)
+                'chartA' => ['labels'=>$labels,'datasets'=>[
+                    ['label'=>'Mahasiswa Aktif','data'=>$mhs,'color'=>'#2563eb','fill'=>true],
+                    ['label'=>'Dosen Tetap',    'data'=>$dos,'color'=>'#0f766e','fill'=>false],
+                ]],
+                'chartB' => ['labels'=>$labels,'datasets'=>[
+                    ['label'=>'IPK Rata-rata',        'data'=>$ipk,'color'=>'#0f766e','fill'=>true,'yAxis'=>'y'],
+                    ['label'=>'Publikasi (kumulatif)','data'=>$pub,'color'=>'#f97316','fill'=>false,'dash'=>[6,4],'yAxis'=>'y2'],
+                ]],
+                // One combined chart (beranda page) — mahasiswa+dosen left axis, IPK right axis
+                'chartAll' => ['labels'=>$labels,'datasets'=>[
+                    ['label'=>'Mahasiswa Aktif','data'=>$mhs,'color'=>'#2563eb','fill'=>false,'yAxis'=>'y'],
+                    ['label'=>'Dosen Tetap',    'data'=>$dos,'color'=>'#0f766e','fill'=>false,'yAxis'=>'y'],
+                    ['label'=>'Publikasi (kum.)','data'=>$pub,'color'=>'#f97316','fill'=>false,'dash'=>[5,3],'yAxis'=>'y'],
+                    ['label'=>'IPK Rata-rata',  'data'=>$ipk,'color'=>'#7c3aed','fill'=>false,'dash'=>[3,2],'yAxis'=>'y2'],
+                ]],
+            ];
+        }
+
+        // Yearly aggregates
+        $sorted = $stats->sortBy('year')->values();
+        if ($sorted->isEmpty()) { return $this->emptyChartJs('Semua Tahun'); }
+
+        $years = $sorted->pluck('year')->map(fn($y) => (string)$y)->all();
+        $mhs   = $sorted->map(fn($s) => (float) data_get($s->kpi,'0.value',0))->all();
+        $ipk   = $sorted->map(fn($s) => (float) data_get($s->kpi,'1.value',0))->all();
+        $dos   = $sorted->map(fn($s) => (float) data_get($s->kpi,'2.value',0))->all();
+        $pub   = $sorted->map(fn($s) => (float) data_get($s->kpi,'3.value',0))->all();
+        $first = $years[0] ?? $activeYear;
+        $last  = end($years) ?: $activeYear;
+
+        return [
+            'rangeLabel' => 'Semua Tahun (' . $first . ' – ' . $last . ')',
+            'trendMode'  => 'all',
+            'chartA' => ['labels'=>$years,'datasets'=>[
+                ['label'=>'Mahasiswa Aktif','data'=>$mhs,'color'=>'#2563eb','fill'=>true],
+                ['label'=>'Dosen Tetap',    'data'=>$dos,'color'=>'#0f766e','fill'=>false],
+            ]],
+            'chartB' => ['labels'=>$years,'datasets'=>[
+                ['label'=>'IPK Rata-rata','data'=>$ipk,'color'=>'#0f766e','fill'=>true,'yAxis'=>'y'],
+                ['label'=>'Publikasi',    'data'=>$pub,'color'=>'#f97316','fill'=>false,'dash'=>[6,4],'yAxis'=>'y2'],
+            ]],
+            'chartAll' => ['labels'=>$years,'datasets'=>[
+                ['label'=>'Mahasiswa Aktif','data'=>$mhs,'color'=>'#2563eb','fill'=>false,'yAxis'=>'y'],
+                ['label'=>'Dosen Tetap',    'data'=>$dos,'color'=>'#0f766e','fill'=>false,'yAxis'=>'y'],
+                ['label'=>'Publikasi',      'data'=>$pub,'color'=>'#f97316','fill'=>false,'dash'=>[5,3],'yAxis'=>'y'],
+                ['label'=>'IPK Rata-rata',  'data'=>$ipk,'color'=>'#7c3aed','fill'=>false,'dash'=>[3,2],'yAxis'=>'y2'],
+            ]],
+        ];
+    }
+
+    private function emptyChartJs(string $label): array
+    {
+        $empty = ['labels'=>[],'datasets'=>[]];
+        return ['rangeLabel'=>$label,'trendMode'=>'year','chartA'=>$empty,'chartB'=>$empty,'chartAll'=>$empty];
     }
 }

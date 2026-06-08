@@ -1,54 +1,121 @@
 <div class="space-y-8">
-    <section class="js-hero-carousel relative overflow-hidden rounded-3xl border border-white/20 p-6 shadow-xl md:p-10">
-        <div class="absolute inset-0">
-            @foreach (collect($homeContent['hero_items'] ?? [])->values() as $index => $hero)
-                <div class="js-hero-slide absolute inset-0 bg-cover bg-center transition-opacity duration-700 {{ $index === 0 ? 'opacity-100' : 'opacity-0' }}"
-                    style="background-image: linear-gradient(120deg, rgba(4, 20, 42, 0.82), rgba(12, 58, 96, 0.45)), url('{{ data_get($hero, 'image_url', $homeContent['hero_background_url']) }}');">
-                </div>
-            @endforeach
-        </div>
-        <div class="relative z-10 max-w-3xl text-white">
-            @php $tahunLaporanAktif = data_get($daftarTahun, 0, $tahunDipilih); @endphp
-            @php $namaProdiSuffix = trim((string) data_get($homeContent, 'kaprodi_name', '')); @endphp
-            <p class="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]">
-                Laporan Tahunan {{ $tahunLaporanAktif }}</p>
-            <h2 class="mt-4 display-font text-4xl leading-tight md:text-6xl">{{ data_get($homeContent, 'header_title_text', 'Laporan Tahunan Kepala Program Studi') }}</h2>
-            <p class="mt-3 text-xl font-semibold text-sky-100">{{ data_get($homeContent, 'kaprodi_title', 'Kepala Program Studi') }}</p>
-            <p class="mt-4 text-sm leading-relaxed text-slate-100 md:text-base">{{ data_get($homeContent, 'kaprodi_quote', 'Portal resmi untuk ringkasan kinerja, capaian akademik, statistik, dokumen pendukung, dan dokumentasi kegiatan Program Studi.') }}{{ $namaProdiSuffix !== '' ? ' — ' . $namaProdiSuffix : '' }}</p>
-            <div class="mt-7 flex flex-wrap gap-3">
-                <a wire:navigate.hover href="{{ route('laporan') }}"
-                    class="rounded-full bg-white px-5 py-3 text-sm font-bold text-sky-800 transition hover:-translate-y-0.5">Lihat
-                    Laporan Tahunan</a>
-                <a href="#statistik-beranda"
-                    class="rounded-full border border-white/45 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20">Lihat
-                    Data Statistik</a>
-            </div>
+
+    {{-- ═══════════════════════════════════════════════════════
+         HERO CAROUSEL — modern split layout
+    ═══════════════════════════════════════════════════════ --}}
+    @php
+        $heroItems   = collect($homeContent['hero_items'] ?? [])->values();
+        $heroCount   = $heroItems->count();
+        $tahunLaporanAktif  = data_get($daftarTahun, 0, $tahunDipilih);
+        $namaProdiSuffix    = trim((string) data_get($homeContent, 'kaprodi_name', ''));
+        $tahunCepatAwal     = collect($daftarTahun)->take(5)->all();
+        $tahunCepatLanjutan = collect($daftarTahun)->slice(5)->all();
+    @endphp
+
+    <section
+        class="js-hero-carousel relative overflow-hidden rounded-3xl shadow-2xl"
+        style="min-height: 480px;">
+
+        {{-- ── Slide backgrounds ── --}}
+        @foreach ($heroItems as $index => $hero)
             @php
-                $tahunCepatAwal = collect($daftarTahun)->take(5)->all();
-                $tahunCepatLanjutan = collect($daftarTahun)->slice(5)->all();
+                $img = data_get($hero, 'image_url', $homeContent['hero_background_url'] ?? '');
+                $hasImg = !empty($img);
             @endphp
-            <div class="mt-5 space-y-2">
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">Tautan Cepat
-                        Tahun:</span>
-                    @foreach ($tahunCepatAwal as $tahun)
-                        <a wire:navigate.hover href="{{ route('laporan', ['year' => $tahun]) }}"
-                            class="rounded-full border border-white/35 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20">{{ $tahun }}</a>
+            <div class="js-hero-slide absolute inset-0 transition-opacity duration-700 ease-in-out {{ $index === 0 ? 'opacity-100' : 'opacity-0' }}">
+                @if ($hasImg)
+                    {{-- Image slide --}}
+                    <div class="absolute inset-0 bg-cover bg-center" style="background-image:url('{{ $img }}');"></div>
+                    <div class="absolute inset-0" style="background: linear-gradient(110deg, rgba(3,17,40,0.88) 0%, rgba(7,42,90,0.72) 45%, rgba(3,17,40,0.45) 100%);"></div>
+                @else
+                    {{-- Pure gradient fallback — looks great even without an image --}}
+                    <div class="absolute inset-0" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0c2a4a 70%, #0f172a 100%);"></div>
+                    {{-- Decorative blobs --}}
+                    <div class="absolute -top-20 -right-20 h-96 w-96 rounded-full opacity-20" style="background: radial-gradient(circle, #3b82f6, transparent 70%);"></div>
+                    <div class="absolute -bottom-24 -left-16 h-80 w-80 rounded-full opacity-15" style="background: radial-gradient(circle, #0ea5e9, transparent 70%);"></div>
+                    <div class="absolute top-1/2 right-1/4 h-60 w-60 rounded-full opacity-10" style="background: radial-gradient(circle, #8b5cf6, transparent 70%);"></div>
+                @endif
+                {{-- Subtle grid overlay for depth --}}
+                <div class="absolute inset-0 opacity-[0.04]" style="background-image: linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px); background-size: 40px 40px;"></div>
+            </div>
+        @endforeach
+
+        {{-- ── Content layer ── --}}
+        <div class="relative z-10 flex min-h-[480px] flex-col justify-between p-6 md:p-10 lg:p-14">
+
+            {{-- Top: badge --}}
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-sky-100 backdrop-blur-sm">
+                    <span class="inline-block h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse"></span>
+                    Laporan Tahunan {{ $tahunLaporanAktif }}
+                </span>
+            </div>
+
+            {{-- Middle: main content --}}
+            <div class="mt-8 grid gap-8 lg:grid-cols-[1fr_auto]">
+
+                {{-- Left: text --}}
+                <div class="max-w-2xl text-white">
+                    <h2 class="display-font text-4xl font-bold leading-[1.15] tracking-tight md:text-5xl lg:text-6xl">
+                        {{ data_get($homeContent, 'header_title_text', 'Laporan Tahunan Kepala Program Studi') }}
+                    </h2>
+                    <p class="mt-3 text-lg font-semibold text-sky-200">
+                        {{ data_get($homeContent, 'kaprodi_title', 'Kepala Program Studi') }}
+                    </p>
+                    <p class="mt-4 max-w-xl text-sm leading-relaxed text-slate-300 md:text-base">
+                        {{ data_get($homeContent, 'kaprodi_quote', 'Portal resmi untuk ringkasan kinerja, capaian akademik, statistik, dokumen pendukung, dan dokumentasi kegiatan Program Studi.') }}{{ $namaProdiSuffix !== '' ? ' — ' . $namaProdiSuffix : '' }}
+                    </p>
+                    <div class="mt-7 flex flex-wrap gap-3">
+                        <a wire:navigate.hover href="{{ route('laporan') }}"
+                            class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-sky-900 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:shadow-xl">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Lihat Laporan
+                        </a>
+                        <a href="#statistik-beranda"
+                            class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            Data Statistik
+                        </a>
+                    </div>
+
+                    {{-- Quick year links --}}
+                    <div class="mt-6">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">Tahun:</span>
+                            @foreach ($tahunCepatAwal as $tahun)
+                                <a wire:navigate.hover href="{{ route('laporan', ['year' => $tahun]) }}"
+                                    class="rounded-full border border-white/20 bg-white/8 px-2.5 py-1 text-[11px] font-semibold text-white/80 transition hover:border-white/50 hover:bg-white/15 hover:text-white">{{ $tahun }}</a>
+                            @endforeach
+                            @if (count($tahunCepatLanjutan) > 0)
+                                @foreach ($tahunCepatLanjutan as $tahun)
+                                    <a wire:navigate.hover href="{{ route('laporan', ['year' => $tahun]) }}"
+                                        class="rounded-full border border-white/20 bg-white/8 px-2.5 py-1 text-[11px] font-semibold text-white/80 transition hover:border-white/50 hover:bg-white/15 hover:text-white">{{ $tahun }}</a>
+                                @endforeach
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Right: decorative stat cards — removed --}}
+            </div>
+
+            {{-- Bottom: dots di kanan --}}
+            @if ($heroCount > 1)
+            <div class="mt-8 flex items-center justify-end">
+                <div class="flex items-center gap-2">
+                    @foreach ($heroItems as $index => $hero)
+                        <button type="button" data-hero-dot="{{ $index }}"
+                            class="js-hero-dot transition-all duration-300 rounded-full
+                                   {{ $index === 0
+                                       ? 'h-2.5 w-8 bg-white shadow-lg shadow-white/30'
+                                       : 'h-2 w-2 bg-white/35 hover:bg-white/60' }}">
+                        </button>
                     @endforeach
                 </div>
-                @if (count($tahunCepatLanjutan) > 0)
-                    <details class="text-white">
-                        <summary class="cursor-pointer text-xs font-semibold text-sky-100">Lihat semua tahun</summary>
-                        <div class="mt-2 flex flex-wrap gap-2">
-                            @foreach ($tahunCepatLanjutan as $tahun)
-                                <a wire:navigate.hover href="{{ route('laporan', ['year' => $tahun]) }}"
-                                    class="rounded-full border border-white/35 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20">{{ $tahun }}</a>
-                            @endforeach
-                        </div>
-                    </details>
-                @endif
             </div>
-        </div>
+            @endif
+
+        </div>{{-- /content layer --}}
     </section>
 
     <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -129,7 +196,7 @@
     </section>
 
     <section id="statistik-beranda" class="grid gap-4 lg:grid-cols-2 scroll-mt-28">
-        <article class="section-box relative rounded-2xl p-6 pb-20 lg:col-span-2" x-data="{ openMore: false }">
+        <article class="section-box relative rounded-2xl p-6  lg:col-span-2" x-data="{ openMore: false }">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h3 class="display-font text-4xl leading-tight">Data dan Statistik Prodi</h3>
                 @php
@@ -169,136 +236,38 @@
                     </div>
                 @endforeach
             </div>
-            {{-- Hero carousel navigation dots (satu set, di luar loop KPI) --}}
-            <div class="mt-4 flex items-center gap-2">
-                @foreach (collect($homeContent['hero_items'] ?? [])->values() as $index => $hero)
-                    <button type="button" data-hero-dot="{{ $index }}"
-                        class="js-hero-dot h-2.5 rounded-full bg-slate-300 transition-all {{ $index === 0 ? 'w-7 bg-(--accent)' : 'w-2.5' }}"></button>
-                @endforeach
-            </div>
+            {{-- dots carousel ada di dalam hero section --}}
         </article>
 
         <article class="section-box rounded-2xl p-6"
-                 x-data="berandaTrendChart({{ json_encode(data_get($statistikAktif, 'trend.tooltipData', []), JSON_UNESCAPED_UNICODE) }})"
-                 x-init="init()">
+                 wire:ignore.self>
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                     <p class="text-sm font-semibold">Tren Indikator Utama</p>
-                    <p class="mt-0.5 text-[11px] text-(--muted)">{{ data_get($statistikAktif, 'trend.rangeLabel', '') }}</p>
+                    <p class="mt-0.5 text-[11px] text-(--muted)">{{ data_get($chartJsData, 'rangeLabel', '') }}</p>
                 </div>
                 <div class="flex items-center gap-1.5">
                     <button type="button" wire:click="pilihTrendMode('year')"
-                        class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition {{ data_get($statistikAktif, 'trend.trendMode', 'year') === 'year' ? 'bg-(--accent) text-white shadow-sm' : 'border border-(--line) bg-white text-(--muted) hover:bg-slate-50' }}">Per Tahun</button>
+                        class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition {{ data_get($chartJsData, 'trendMode', 'year') === 'year' ? 'bg-(--accent) text-white shadow-sm' : 'border border-(--line) bg-white text-(--muted) hover:bg-slate-50' }}">Per Tahun</button>
                     <button type="button" wire:click="pilihTrendMode('all')"
-                        class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition {{ data_get($statistikAktif, 'trend.trendMode', 'year') === 'all' ? 'bg-(--accent) text-white shadow-sm' : 'border border-(--line) bg-white text-(--muted) hover:bg-slate-50' }}">Semua Tahun</button>
+                        class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition {{ data_get($chartJsData, 'trendMode', 'year') === 'all' ? 'bg-(--accent) text-white shadow-sm' : 'border border-(--line) bg-white text-(--muted) hover:bg-slate-50' }}">Semua Tahun</button>
                 </div>
             </div>
 
-            <div class="relative mt-4 rounded-xl border border-(--line) bg-white p-4 shadow-sm">
-                <svg id="beranda-trend-svg" viewBox="0 0 340 148" class="h-44 w-full overflow-visible"
-                     @mousemove="onMouseMove($event)" @mouseleave="onMouseLeave()">
+            @php
+                $bjAll  = data_get($chartJsData, 'chartAll', ['labels'=>[],'datasets'=>[]]);
+                $bjMode = data_get($chartJsData, 'trendMode', 'year');
+            @endphp
 
-                    @foreach (data_get($statistikAktif, 'trend.yTicks', []) as $tick)
-                        <line x1="34" y1="{{ data_get($tick, 'y') }}" x2="310"
-                            y2="{{ data_get($tick, 'y') }}" stroke="#e2e8f0" stroke-width="1" />
-                        <text x="30" y="{{ data_get($tick, 'y') + 3.5 }}" text-anchor="end"
-                            font-size="8.5" fill="#94a3b8">{{ data_get($tick, 'label') }}</text>
-                    @endforeach
-
-                    {{-- Area fills --}}
-                    @php
-                        $mPts = $statistikAktif['trend']['mahasiswa'] ?? '';
-                        $firstMX = $mPts ? (float) explode(',', explode(' ', trim($mPts))[0])[0] : 34;
-                        $lastX   = data_get($statistikAktif,'trend.lastX', 310);
-                    @endphp
-                    <polygon points="{{ $mPts }} {{ $lastX }},128 {{ $firstMX }},128"
-                        fill="#1d4ed8" fill-opacity="0.05" />
-
-                    <polyline points="{{ $statistikAktif['trend']['mahasiswa'] }}" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
-                    <polyline points="{{ $statistikAktif['trend']['ipk'] }}" fill="none" stroke="#0f766e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
-                    <polyline points="{{ $statistikAktif['trend']['publikasi'] }}" fill="none" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="5 3" stroke-linejoin="round" stroke-linecap="round" />
-                    <polyline points="{{ $statistikAktif['trend']['dosen'] }}" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
-                    <polyline points="{{ data_get($statistikAktif,'trend.progressYtd','') }}" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="3 2" stroke-linejoin="round" stroke-linecap="round" />
-
-                    {{-- End dots --}}
-                    <circle cx="{{ $lastX }}" cy="{{ $statistikAktif['trend']['mahasiswaLastY'] }}" r="4" fill="#1d4ed8" stroke="white" stroke-width="1.5" />
-                    <circle cx="{{ $lastX }}" cy="{{ $statistikAktif['trend']['ipkLastY'] }}" r="4" fill="#0f766e" stroke="white" stroke-width="1.5" />
-                    <circle cx="{{ $lastX }}" cy="{{ $statistikAktif['trend']['publikasiLastY'] }}" r="3.5" fill="#ea580c" stroke="white" stroke-width="1.5" />
-                    <circle cx="{{ $lastX }}" cy="{{ $statistikAktif['trend']['dosenLastY'] }}" r="3.5" fill="#fb923c" stroke="white" stroke-width="1.5" />
-                    <circle cx="{{ $lastX }}" cy="{{ data_get($statistikAktif,'trend.progressLastY',96) }}" r="3.5" fill="#7c3aed" stroke="white" stroke-width="1.5" />
-
-                    {{-- Hover crosshair --}}
-                    <line x-show="hoverIdx !== null" :x1="hoverX" y1="20" :x2="hoverX" y2="128"
-                        stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 2" />
-
-                    @foreach (data_get($statistikAktif, 'trend.yearTicks', []) as $tick)
-                        <text x="{{ data_get($tick, 'x') }}" y="143" text-anchor="middle"
-                            font-size="8.5" fill="#94a3b8">{{ data_get($tick, 'label', data_get($tick, 'year')) }}</text>
-                    @endforeach
-                </svg>
-
-                {{-- Tooltip --}}
-                <div x-show="hoverIdx !== null" x-cloak
-                     :style="'left:' + tooltipLeft + 'px; top:' + tooltipTop + 'px'"
-                     class="pointer-events-none absolute z-20 min-w-[150px] rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg text-[11px] leading-5">
-                    <p class="mb-1 font-semibold text-slate-700" x-text="hoverLabel"></p>
-                    <p class="text-blue-700">Mahasiswa: <span class="font-semibold" x-text="hoverMahasiswa"></span></p>
-                    <p class="text-teal-700">IPK: <span class="font-semibold" x-text="hoverIpk"></span></p>
-                    <p class="text-orange-600">Publikasi: <span class="font-semibold" x-text="hoverPublikasi"></span></p>
-                    <p class="text-orange-400">Dosen: <span class="font-semibold" x-text="hoverDosen"></span></p>
+            <div class="mt-4">
+                <div
+                    wire:key="beranda-chart--{{ $bjMode }}--{{ $tahunDipilih }}"
+                    x-data="prodiChartInit('beranda-chart--{{ $bjMode }}--{{ $tahunDipilih }}', {{ json_encode($bjAll['labels'], JSON_UNESCAPED_UNICODE) }}, {{ json_encode($bjAll['datasets'], JSON_UNESCAPED_UNICODE) }}, true)"
+                    x-init="boot()"
+                    style="position:relative; height:220px; width:100%;">
+                    <canvas id="beranda-chart--{{ $bjMode }}--{{ $tahunDipilih }}" style="display:block; width:100%; height:100%;"></canvas>
                 </div>
             </div>
-
-            <div class="mt-3 flex flex-wrap gap-3 text-[10px] font-medium text-slate-500">
-                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-blue-700"></span>Mahasiswa</span>
-                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-teal-700"></span>IPK</span>
-                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-orange-600" style="border-top:2px dashed #ea580c;height:0"></span>Publikasi</span>
-                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-orange-400"></span>Dosen</span>
-                <span class="flex items-center gap-1"><span class="inline-block h-1.5 w-4 rounded bg-violet-600"></span>Progres</span>
-            </div>
-
-            <script>
-            function berandaTrendChart(tooltipData) {
-                return {
-                    hoverIdx: null, hoverX: 0,
-                    hoverLabel:'', hoverMahasiswa:'', hoverDosen:'', hoverIpk:'', hoverPublikasi:'',
-                    tooltipLeft: 0, tooltipTop: 0, points: [],
-                    init() {
-                        const svg = document.getElementById('beranda-trend-svg');
-                        if (!svg) return;
-                        const poly = svg.querySelector('polyline');
-                        if (!poly || !tooltipData || !tooltipData.length) return;
-                        const raw = poly.getAttribute('points').trim().split(/\s+/);
-                        this.points = raw.map(p => parseFloat(p.split(',')[0]));
-                    },
-                    onMouseMove(event) {
-                        if (!tooltipData || !tooltipData.length || !this.points.length) return;
-                        const svg = document.getElementById('beranda-trend-svg');
-                        if (!svg) return;
-                        const rect = svg.getBoundingClientRect();
-                        const scaleX = rect.width / 340;
-                        const mouseX = (event.clientX - rect.left) / scaleX;
-                        let closest = 0, minDist = Infinity;
-                        this.points.forEach((px, i) => { const d = Math.abs(px - mouseX); if (d < minDist) { minDist = d; closest = i; } });
-                        if (minDist > 18) { this.hoverIdx = null; return; }
-                        this.hoverIdx = closest;
-                        this.hoverX = this.points[closest];
-                        const d = tooltipData[closest] || {};
-                        this.hoverLabel = d.label || '';
-                        this.hoverMahasiswa = typeof d.mahasiswa === 'number' ? d.mahasiswa.toLocaleString('id-ID') : d.mahasiswa;
-                        this.hoverDosen = typeof d.dosen === 'number' ? d.dosen.toLocaleString('id-ID') : d.dosen;
-                        this.hoverIpk = typeof d.ipk === 'number' ? d.ipk.toFixed(2).replace('.', ',') : d.ipk;
-                        this.hoverPublikasi = typeof d.publikasi === 'number' ? d.publikasi.toLocaleString('id-ID') : d.publikasi;
-                        const container = svg.parentElement;
-                        const cRect = container.getBoundingClientRect();
-                        const svgLeft = this.hoverX * scaleX;
-                        this.tooltipLeft = Math.max(4, Math.min(svgLeft - 75, cRect.width - 160));
-                        this.tooltipTop = 4;
-                    },
-                    onMouseLeave() { this.hoverIdx = null; }
-                };
-            }
-            </script>
         </article>
 
         <article class="section-box rounded-2xl p-6">
@@ -648,45 +617,52 @@
 
             const initHeroCarousel = () => {
                 const container = document.querySelector('.js-hero-carousel');
-                if (!container) {
-                    return;
-                }
+                if (!container) return;
 
                 const slides = Array.from(container.querySelectorAll('.js-hero-slide'));
-                const dots = Array.from(container.querySelectorAll('.js-hero-dot'));
-                if (slides.length <= 1) {
-                    return;
-                }
+                const dots   = Array.from(container.querySelectorAll('.js-hero-dot'));
+                if (slides.length <= 1) return;
 
                 let activeIndex = 0;
+
                 const applyActive = (index) => {
-                    activeIndex = index;
+                    activeIndex = (index + slides.length) % slides.length;
 
                     slides.forEach((slide, i) => {
                         slide.classList.toggle('opacity-100', i === activeIndex);
-                        slide.classList.toggle('opacity-0', i !== activeIndex);
+                        slide.classList.toggle('opacity-0',  i !== activeIndex);
                     });
 
                     dots.forEach((dot, i) => {
-                        dot.classList.toggle('w-7', i === activeIndex);
-                        dot.classList.toggle('bg-white', i === activeIndex);
-                        dot.classList.toggle('w-2.5', i !== activeIndex);
-                        dot.classList.toggle('bg-white/55', i !== activeIndex);
+                        if (i === activeIndex) {
+                            dot.classList.add('w-8', 'bg-white', 'shadow-lg');
+                            dot.classList.remove('w-2', 'bg-white/35', 'hover:bg-white/60', 'h-2');
+                            dot.classList.add('h-2.5');
+                        } else {
+                            dot.classList.remove('w-8', 'bg-white', 'shadow-lg', 'h-2.5');
+                            dot.classList.add('w-2', 'h-2', 'bg-white/35');
+                        }
                     });
                 };
 
-                dots.forEach((dot, index) => {
-                    dot.addEventListener('click', () => applyActive(index));
+                // Dot clicks
+                dots.forEach((dot, i) => dot.addEventListener('click', () => {
+                    applyActive(i);
+                    resetTimer();
+                }));
+
+                // Auto-advance
+                const resetTimer = () => {
+                    if (window.__heroCarouselTimer) clearInterval(window.__heroCarouselTimer);
+                    window.__heroCarouselTimer = setInterval(() => applyActive(activeIndex + 1), 5000);
+                };
+                resetTimer();
+
+                // Pause on hover
+                container.addEventListener('mouseenter', () => {
+                    if (window.__heroCarouselTimer) clearInterval(window.__heroCarouselTimer);
                 });
-
-                if (window.__heroCarouselTimer) {
-                    clearInterval(window.__heroCarouselTimer);
-                }
-
-                window.__heroCarouselTimer = setInterval(() => {
-                    const nextIndex = (activeIndex + 1) % slides.length;
-                    applyActive(nextIndex);
-                }, 4500);
+                container.addEventListener('mouseleave', resetTimer);
             };
 
             const animateTrendCharts = () => {

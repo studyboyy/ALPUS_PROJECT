@@ -74,10 +74,18 @@ class DashboardMonthlyStat extends Model
         $targetPublikasi = (float) data_get($annualKpi, '3.value', 0);
 
         $items = [
+            // Mahasiswa: progress terhadap target tahunan (masuk akal — bisa 80%, 90%, dsb)
             static::buildItem('Mahasiswa Aktif (YTD)', $realisasiMahasiswa, $targetMahasiswa, $targetMahasiswa, 0),
-            static::buildItem('IPK Rata-rata (YTD)', $realisasiIpk, $targetIpk, $targetIpk, 2),
-            static::buildItem('Dosen Tetap (YTD)', $realisasiDosen, $targetDosen, $targetDosen, 0),
-            static::buildItem('Publikasi (YTD)', $realisasiPublikasi, $targetPublikasi, ($realisasiPublikasi / $monthCount) * 12, 0),
+
+            // IPK: bukan progress %, tapi nilai absolut dengan status berdasarkan range
+            // Gunakan target sebagai batas "lulus", tapi cap progress di 100% agar tidak aneh
+            static::buildItemIpk('IPK Rata-rata (YTD)', $realisasiIpk, 2),
+
+            // Dosen: progress terhadap formasi/target (jika target = 0, tampilkan absolut saja)
+            static::buildItem('Dosen Tetap (YTD)', $realisasiDosen, $targetDosen > 0 ? $targetDosen : $realisasiDosen, $targetDosen > 0 ? $targetDosen : $realisasiDosen, 0),
+
+            // Publikasi: akumulatif, forecast = annualisasi dari rate bulan berjalan
+            static::buildItem('Publikasi (YTD)', $realisasiPublikasi, $targetPublikasi, round(($realisasiPublikasi / $monthCount) * 12, 0), 0),
         ];
 
         return [
@@ -110,7 +118,7 @@ class DashboardMonthlyStat extends Model
 
     private static function buildItem(string $label, float $realisasi, float $target, float $forecast, int $decimals): array
     {
-        $progress = $target > 0 ? ($realisasi / $target) * 100 : 0;
+        $progress = $target > 0 ? min(100, ($realisasi / $target) * 100) : 0;
         $progress = max(0, round($progress, 1));
 
         $status = 'danger';
@@ -121,13 +129,42 @@ class DashboardMonthlyStat extends Model
         }
 
         return [
-            'label' => $label,
+            'label'    => $label,
             'realisasi' => round($realisasi, $decimals),
-            'target' => round($target, $decimals),
+            'target'   => round($target, $decimals),
             'forecast' => round($forecast, $decimals),
-            'progress' => min(200, $progress),
+            'progress' => $progress,
             'decimals' => $decimals,
-            'status' => $status,
+            'status'   => $status,
+        ];
+    }
+
+    /**
+     * IPK khusus: status berdasarkan nilai absolut, bukan persentase target.
+     * Skala: ≥ 3.50 = Unggul (success), 3.00–3.49 = Baik (warning), < 3.00 = Perlu Perhatian (danger)
+     * Progress bar menggambarkan posisi IPK dalam skala 2.00–4.00.
+     */
+    private static function buildItemIpk(string $label, float $ipk, int $decimals): array
+    {
+        // Progress bar: posisi dalam rentang 2.00–4.00 (skala IPK akademik)
+        $progress = round(max(0, min(100, (($ipk - 2.0) / 2.0) * 100)), 1);
+
+        $status = 'danger';
+        if ($ipk >= 3.50) {
+            $status = 'success';  // Unggul
+        } elseif ($ipk >= 3.00) {
+            $status = 'warning';  // Baik / Baik Sekali
+        }
+
+        return [
+            'label'    => $label,
+            'realisasi' => round($ipk, $decimals),
+            'target'   => 4.00,    // Skala maks IPK
+            'forecast' => round($ipk, $decimals), // IPK tidak perlu diannualisasi
+            'progress' => $progress,
+            'decimals' => $decimals,
+            'status'   => $status,
+            'is_ipk'   => true,    // Flag untuk blade agar label status tepat
         ];
     }
 

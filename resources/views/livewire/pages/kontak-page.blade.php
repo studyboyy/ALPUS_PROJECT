@@ -137,11 +137,16 @@
                         @error('feedbackMessage')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                     </div>
 
-                    <button type="submit" class="btn-primary w-full">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <button type="submit" class="btn-primary w-full" wire:loading.attr="disabled" wire:loading.class="opacity-70">
+                        <svg wire:loading.remove class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>
-                        Kirim Umpan Balik
+                        <svg wire:loading class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                        </svg>
+                        <span wire:loading.remove>Kirim Umpan Balik</span>
+                        <span wire:loading>Mengirim…</span>
                     </button>
                 </form>
             </div>
