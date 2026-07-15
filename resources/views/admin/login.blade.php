@@ -79,9 +79,9 @@
         </section>
 
         <section class="login-card w-full rounded-3xl p-6 md:p-8">
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Admin Access</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Portal Access</p>
             <h2 class="display-font mt-3 text-4xl leading-tight text-(--ink)">Masuk ke Panel</h2>
-            <p class="mt-2 text-sm text-(--muted)">Gunakan username/email dan password admin untuk melanjutkan.</p>
+            <p class="mt-2 text-sm text-(--muted)">Pilih Program Studi, lalu masukkan username/email dan password akun Anda.</p>
 
             @if ($errors->any())
                 <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -91,19 +91,29 @@
 
             <form method="POST" action="{{ route('admin.login.submit') }}" class="mt-6 space-y-4">
                 @csrf
-                <label class="block text-sm font-semibold text-slate-700">Username atau Email
-                    <input name="login" type="text" value="{{ old('login') }}"
+                <label class="block text-sm font-semibold text-slate-700">Program Studi
+                    <select name="prodi_id" required
                         class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                        placeholder="admin atau admin@prodi.local" required>
+                        >
+                        <option value="">-- Pilih Program Studi --</option>
+                        @foreach(\App\Models\Prodi::query()->where('is_active', true)->orderByRaw("code = 'ADMIN' desc")->orderBy('name')->get() as $prodi)
+                            <option value="{{ $prodi->id }}" @selected(old('prodi_id') == $prodi->id)>{{ $prodi->code === 'ADMIN' ? 'Administrator' : $prodi->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="block text-sm font-semibold text-slate-700">Username atau Email
+                    <input name="login" type="text" value="{{ old('login') }}" autocomplete="username"
+                        class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                        placeholder="Contoh: kaprodi.if atau kaprodi.if@prodi.local" required autofocus>
                 </label>
                 <label class="block text-sm font-semibold text-slate-700">Password
-                    <input name="password" type="password"
+                    <input name="password" type="password" autocomplete="current-password"
                         class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                         placeholder="Masukkan password" required>
                 </label>
                 <button type="submit"
                     class="btn-primary w-full rounded-2xl px-4 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5">Masuk
-                    Admin Dashboard</button>
+                    Portal</button>
             </form>
 
             <p class="mt-5 text-center text-xs text-slate-500">Halaman ini bersifat privat. Aktivitas login tercatat

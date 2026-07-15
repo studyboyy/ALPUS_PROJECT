@@ -50,8 +50,7 @@
             <strong>{{ $document->title }}</strong><br>
             <span class="muted">{{ $document->description }}</span><br>
             <span class="tag">{{ $document->category }}</span>
-            <div style="margin-top: 8px;">File: {{ $document->file_name ?: 'Dokumen' }}</div>
-            <div class="muted">{{ $document->file_url }}</div>
+            <div style="margin-top: 8px;">Dokumen tercatat dalam sistem.</div>
         </div>
     @endforeach
 </body>

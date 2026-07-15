@@ -54,6 +54,7 @@ class AdminBerandaContentPage extends Component
 
     public function hapusHeroItem(int $index): void
     {
+        if (!auth()->user()?->canDelete()) { return; }
         if (!isset($this->heroItems[$index])) {
             return;
         }
@@ -122,6 +123,7 @@ class AdminBerandaContentPage extends Component
 
     public function hapusQuickHighlight(int $index): void
     {
+        if (!auth()->user()?->canDelete()) { return; }
         if (!isset($this->quickHighlights[$index])) {
             return;
         }
@@ -132,6 +134,7 @@ class AdminBerandaContentPage extends Component
 
     public function hapusSocialLink(int $index): void
     {
+        if (!auth()->user()?->canDelete()) { return; }
         if (!isset($this->contactSocialLinks[$index])) {
             return;
         }
@@ -142,6 +145,7 @@ class AdminBerandaContentPage extends Component
 
     public function hapusGalleryItem(int $index): void
     {
+        if (!auth()->user()?->canDelete()) { return; }
         if (!isset($this->galleryItems[$index])) {
             return;
         }

@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Concerns\HasProdiScope;
 
 class DashboardProgramItem extends Model
 {
+    use HasProdiScope;
     protected $fillable = [
         'year',
+        'prodi_id',
         'type',
         'title',
         'description',

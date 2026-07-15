@@ -39,6 +39,7 @@ class AdminDocumentPage extends Component
 
     public function hapusDokumen(int $index): void
     {
+        if (!auth()->user()?->canDelete()) { $this->flashStatus('Akses hapus hanya untuk Admin.'); return; }
         $documentId = data_get($this->documents, $index . '.id');
         if ($documentId) {
             DocumentItem::query()->whereKey($documentId)->delete();

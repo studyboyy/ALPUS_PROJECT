@@ -108,6 +108,7 @@ class AdminDashboardDataPage extends Component
 
     public function hapusTahun(int $tahun): void
     {
+        if (!auth()->user()?->canDelete()) { $this->flashStatus('Akses hapus hanya untuk Admin.'); return; }
         if (DashboardYearStat::query()->count() <= 1) {
             $this->flashStatus('Minimal satu tahun statistik harus tetap tersedia.');
             return;

@@ -11,9 +11,7 @@ class EnsureAdminAuthenticated
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $adminEmail = (string) env('ADMIN_EMAIL', 'admin@prodi.local');
-
-        if (Auth::check() && Auth::user()?->email === $adminEmail) {
+        if (Auth::check() && in_array(Auth::user()?->role, ['admin', 'kaprodi', 'sekprodi'], true)) {
             return $next($request);
         }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Prodi;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,9 +32,25 @@ class AdminAuthController extends Controller
             ['email' => $email],
             [
                 'name' => $name,
+                'username' => $this->adminUsername(),
+                'role' => 'admin',
+                'prodi_id' => Prodi::query()->where('code', 'ADMIN')->value('id'),
                 'password' => Hash::make($password),
             ]
         );
+
+        foreach (Prodi::query()->where('code', '!=', 'ADMIN')->where('is_active', true)->get() as $prodi) {
+            if (! User::query()->where('prodi_id', $prodi->id)->where('role', 'kaprodi')->exists()) {
+                User::query()->create([
+                    'username' => 'kaprodi.'.strtolower($prodi->code),
+                    'email' => 'kaprodi.'.strtolower($prodi->code).'@prodi.local',
+                    'name' => 'Kaprodi '.$prodi->name,
+                    'role' => 'kaprodi',
+                    'prodi_id' => $prodi->id,
+                    'password' => Hash::make((string) env('KAPRODI_PASSWORD', 'kaprodi123')),
+                ]);
+            }
+        }
     }
 
     public function showLogin(): View|RedirectResponse
@@ -52,29 +69,35 @@ class AdminAuthController extends Controller
         $this->ensureAdminAccountExists();
 
         $credentials = $request->validate([
-            'login' => ['required', 'string'],
+            'prodi_id' => ['required', 'integer', 'exists:prodis,id'],
+            'login' => ['required', 'string', 'max:160'],
             'password' => ['required', 'string'],
         ]);
 
-        $loginInput = trim((string) $credentials['login']);
-        $email = filter_var($loginInput, FILTER_VALIDATE_EMAIL)
-            ? $loginInput
-            : ($loginInput === $this->adminUsername() ? $this->adminEmail() : $loginInput);
+        $identity = strtolower(trim((string) $credentials['login']));
+        $user = User::query()
+            ->where('prodi_id', (int) $credentials['prodi_id'])
+            ->where(function ($query) use ($identity): void {
+                $query->whereRaw('LOWER(username) = ?', [$identity])
+                    ->orWhereRaw('LOWER(email) = ?', [$identity]);
+            })
+            ->first();
+        $user = $user && Hash::check($credentials['password'], (string) $user->password) ? $user : null;
+        $attempted = (bool) $user;
 
-        $attempted = Auth::attempt([
-            'email' => $email,
-            'password' => $credentials['password'],
-        ]);
-
-        if (!$attempted || Auth::user()?->email !== $this->adminEmail()) {
+        if (! $attempted) {
             Auth::logout();
 
             return back()->withErrors([
-                'login' => 'Username/email atau password admin tidak valid.',
-            ])->onlyInput('login');
+                'login' => 'Program Studi, username/email, atau password tidak valid.',
+            ])->onlyInput('prodi_id', 'login');
         }
 
+        Auth::login($user);
         $request->session()->regenerate();
+        if ($user->role !== 'admin' && $user->prodi_id) {
+            $request->session()->put('public_prodi_id', $user->prodi_id);
+        }
 
         return redirect()->route('admin.dashboard');
     }

@@ -219,6 +219,66 @@
             box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
         }
 
+        /* Admin forms */
+        .adm-field-label {
+            display: block;
+            margin-bottom: .45rem;
+            font-size: .75rem;
+            font-weight: 700;
+            color: #3f3f46;
+        }
+
+        .adm-input {
+            display: block;
+            width: 100%;
+            min-height: 2.75rem;
+            border: 1px solid #d4d4d8;
+            border-radius: .75rem;
+            background: #fff;
+            padding: .7rem .85rem;
+            color: #18181b;
+            font-size: .8125rem;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s, background .15s;
+        }
+
+        .adm-input::placeholder { color: #a1a1aa; }
+        .adm-input:hover { border-color: #a1a1aa; }
+        .adm-input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+        }
+
+        .adm-input.is-invalid {
+            border-color: #fda4af;
+            background: #fff7f7;
+        }
+
+        .adm-btn-primary, .adm-btn-secondary {
+            display: inline-flex;
+            min-height: 2.625rem;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            border-radius: .75rem;
+            padding: .65rem 1rem;
+            font-size: .8125rem;
+            font-weight: 700;
+            transition: transform .15s, background .15s, border-color .15s, box-shadow .15s;
+        }
+
+        .adm-btn-primary {
+            border: 1px solid #4f46e5;
+            background: #4f46e5;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(79,70,229,.2);
+        }
+        .adm-btn-primary:hover { background: #4338ca; box-shadow: 0 6px 16px rgba(79,70,229,.25); }
+        .adm-btn-secondary { border: 1px solid #d4d4d8; background: #fff; color: #52525b; }
+        .adm-btn-secondary:hover { border-color: #a5b4fc; background: #eef2ff; color: #4338ca; }
+        .adm-btn-primary:active, .adm-btn-secondary:active { transform: scale(.98); }
+        .adm-btn-primary:disabled, .adm-btn-secondary:disabled { cursor: wait; opacity: .65; }
+
         /* ── Toast ── */
         .admin-toast {
             position: fixed; top: 1rem; right: 1rem;
@@ -364,6 +424,15 @@
                     </svg>
                     Umpan Balik
                 </a>
+                @if (auth()->user()?->isAdmin())
+                    <a wire:navigate.hover href="{{ route('admin.users') }}"
+                        class="adm-link {{ request()->routeIs('admin.users') ? 'active' : '' }}">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-10a4 4 0 100-8 4 4 0 000 8zm11 10v-2a4 4 0 00-3-3.87m-1-11.26a4 4 0 010 7.75"/>
+                        </svg>
+                        Manajemen User
+                    </a>
+                @endif
             </div>
 
             <div class="adm-nav-group">

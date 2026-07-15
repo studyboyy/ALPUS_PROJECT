@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages;
 
 use App\Models\ProfileSection;
+use App\Models\Prodi;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -12,6 +13,7 @@ use Livewire\Component;
 class AdminProfilePage extends Component
 {
     public array $sections = [];
+    public ?int $selectedProdiId = null;
     public ?string $editingSlug = null;
     public string $editTitle = '';
     public string $editSummary = '';
@@ -21,13 +23,34 @@ class AdminProfilePage extends Component
 
     public function mount(): void
     {
-        ProfileSection::ensureDefaults();
+        $user = auth()->user();
+        $this->selectedProdiId = $user?->isAdmin()
+            ? Prodi::query()->where('code', '!=', 'ADMIN')->where('is_active', true)->orderBy('name')->value('id')
+            : $user?->prodi_id;
+
+        $this->ensureDefaultsForSelectedProdi();
+        $this->loadSections();
+    }
+
+    public function pilihProdi(int $prodiId): void
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        if (! Prodi::query()->whereKey($prodiId)->where('code', '!=', 'ADMIN')->where('is_active', true)->exists()) {
+            return;
+        }
+
+        $this->selectedProdiId = $prodiId;
+        $this->cancelEdit();
+        $this->ensureDefaultsForSelectedProdi();
         $this->loadSections();
     }
 
     public function loadSections(): void
     {
-        $this->sections = ProfileSection::allOrdered()
+        $this->sections = $this->profileQuery()
+            ->orderBy('sort_order')
+            ->get()
             ->map(fn($s) => [
                 'slug' => $s->slug,
                 'title' => $s->title,
@@ -41,7 +64,7 @@ class AdminProfilePage extends Component
 
     public function editSection(string $slug): void
     {
-        $section = ProfileSection::getBySlug($slug);
+        $section = $this->profileQuery()->where('slug', $slug)->first();
         if (!$section) {
             return;
         }
@@ -74,7 +97,7 @@ class AdminProfilePage extends Component
             return;
         }
 
-        $section = ProfileSection::getBySlug($this->editingSlug);
+        $section = $this->profileQuery()->where('slug', $this->editingSlug)->first();
         if (!$section) {
             return;
         }
@@ -102,6 +125,32 @@ class AdminProfilePage extends Component
         $this->editIconKey = 'book';
     }
 
+    private function profileQuery()
+    {
+        $query = ProfileSection::query();
+
+        // Admin dapat berpindah tab lintas prodi; global scope publik harus dilewati.
+        if (auth()->user()?->isAdmin()) {
+            $query->withoutGlobalScope('prodi');
+        }
+
+        return $query->where('prodi_id', $this->selectedProdiId);
+    }
+
+    private function ensureDefaultsForSelectedProdi(): void
+    {
+        if (! $this->selectedProdiId) {
+            return;
+        }
+
+        foreach (ProfileSection::defaults() as $section) {
+            $this->profileQuery()->firstOrCreate(
+                ['slug' => $section['slug']],
+                [...$section, 'prodi_id' => $this->selectedProdiId]
+            );
+        }
+    }
+
     private function flashStatus(string $message): void
     {
         session()->flash('status', $message);
@@ -110,6 +159,9 @@ class AdminProfilePage extends Component
 
     public function render()
     {
-        return view('livewire.pages.admin-profile-page');
+        return view('livewire.pages.admin-profile-page', [
+            'prodis' => Prodi::query()->where('code', '!=', 'ADMIN')->where('is_active', true)->orderBy('name')->get(),
+            'selectedProdi' => $this->selectedProdiId ? Prodi::find($this->selectedProdiId) : null,
+        ]);
     }
 }

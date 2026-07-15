@@ -20,6 +20,7 @@ class AdminFeedbackPage extends Component
 
     public function hapusFeedback(int $id): void
     {
+        if (!auth()->user()?->canDelete()) { return; }
         ContactFeedback::query()->whereKey($id)->delete();
     }
 

@@ -1,0 +1,140 @@
+@startuml
+title Use Case Diagram — Sistem Informasi Laporan Tahunan Program Studi
+
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam packageBorderColor #94A3B8
+skinparam packageFontColor #1E293B
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #475569
+  ArrowColor #475569
+  FontColor #0F172A
+}
+
+actor "Pengunjung" as Guest
+actor "Pengguna\nTerautentikasi" as AuthUser
+actor "Kaprodi" as Kaprodi
+actor "Sekprodi" as Sekprodi
+actor "Admin" as Admin
+
+Kaprodi --|> AuthUser
+Sekprodi --|> AuthUser
+Admin --|> AuthUser
+
+rectangle "Sistem Informasi Laporan Tahunan Prodi" {
+  package "Portal Publik" {
+    usecase "Memilih\nProgram Studi" as UCSelectProdi
+    usecase "Melihat Beranda\n& Dashboard" as UCPublicDashboard
+    usecase "Melihat Profil\nProgram Studi" as UCPublicProfile
+    usecase "Melihat Statistik" as UCPublicStats
+    usecase "Melihat Laporan\nTahunan" as UCPublicReport
+    usecase "Melihat Program\n& Agenda" as UCPublicAgenda
+    usecase "Melihat Dokumen\nPublik" as UCPublicDocs
+    usecase "Melihat Galeri" as UCPublicGallery
+    usecase "Mengirim Umpan Balik" as UCFeedback
+    usecase "Mengunduh Laporan\nPDF" as UCReportPdf
+    usecase "Mengunduh Dokumen\nPDF" as UCDocPdf
+  }
+
+  package "Autentikasi" {
+    usecase "Login dengan Prodi,\nUsername/Email, dan Password" as UCLogin
+    usecase "Logout" as UCLogout
+  }
+
+  package "Panel Pengelolaan Prodi" {
+    usecase "Melihat Dashboard\nProdi" as UCAdminDashboard
+    usecase "Mengelola Statistik\nTahunan & Bulanan" as UCManageStats
+    usecase "Mengelola Program\n& Agenda" as UCManageAgenda
+    usecase "Mengelola Laporan\nTahunan" as UCManageReport
+    usecase "Mengelola Konten\nBeranda" as UCManageHome
+    usecase "Mengelola Dokumen\nPublik" as UCManageDocs
+    usecase "Mengelola Profil\nProgram Studi" as UCManageProfile
+    usecase "Mengelola Umpan Balik" as UCManageFeedback
+    usecase "Menerapkan Filter\nSesuai Prodi User" as UCProdiScope
+    usecase "Menambah / Mengubah\nData Prodi Sendiri" as UCWriteOwn
+  }
+
+  package "Khusus Admin" {
+    usecase "Melihat Data\nMulti-Prodi" as UCAllProdi
+    usecase "Mengelola Semua Data\nLintas Prodi" as UCManageAll
+    usecase "Menghapus Data" as UCDelete
+    usecase "Mengelola User\n& Hak Akses" as UCManageUsers
+    usecase "Menambah Prodi Baru\n& Akun Kaprodi" as UCNewProdi
+    usecase "Menyiapkan Data Awal\nProdi Baru" as UCProvision
+    usecase "Mengunduh Laporan\nGabungan Semua Prodi" as UCAllReportPdf
+  }
+}
+
+' Portal publik
+Guest --> UCSelectProdi
+Guest --> UCPublicDashboard
+Guest --> UCPublicProfile
+Guest --> UCPublicStats
+Guest --> UCPublicReport
+Guest --> UCPublicAgenda
+Guest --> UCPublicDocs
+Guest --> UCPublicGallery
+Guest --> UCFeedback
+Guest --> UCReportPdf
+Guest --> UCDocPdf
+
+' Autentikasi
+Kaprodi --> UCLogin
+Sekprodi --> UCLogin
+Admin --> UCLogin
+AuthUser --> UCLogout
+
+' Panel bersama untuk user terautentikasi
+AuthUser --> UCAdminDashboard
+AuthUser --> UCManageStats
+AuthUser --> UCManageAgenda
+AuthUser --> UCManageReport
+AuthUser --> UCManageHome
+AuthUser --> UCManageDocs
+AuthUser --> UCManageProfile
+AuthUser --> UCManageFeedback
+AuthUser --> UCWriteOwn
+
+UCAdminDashboard .> UCProdiScope : <<include>>
+UCManageStats .> UCProdiScope : <<include>>
+UCManageAgenda .> UCProdiScope : <<include>>
+UCManageReport .> UCProdiScope : <<include>>
+UCManageHome .> UCProdiScope : <<include>>
+UCManageDocs .> UCProdiScope : <<include>>
+UCManageProfile .> UCProdiScope : <<include>>
+UCManageFeedback .> UCProdiScope : <<include>>
+
+' Hak khusus admin
+Admin --> UCAllProdi
+Admin --> UCManageAll
+Admin --> UCDelete
+Admin --> UCManageUsers
+Admin --> UCNewProdi
+Admin --> UCAllReportPdf
+UCManageAll .> UCAllProdi : <<include>>
+UCNewProdi .> UCProvision : <<include>>
+UCAllReportPdf .> UCReportPdf : <<extend>>
+
+note right of UCProdiScope
+  Kaprodi/Sekprodi hanya dapat
+  melihat dan menginput data
+  milik prodi yang terhubung
+  dengan akunnya.
+end note
+
+note right of UCDelete
+  Hanya Admin yang memiliki
+  hak hapus data.
+end note
+
+note bottom of UCLogin
+  Login memvalidasi kombinasi
+  Prodi + username/email + password.
+end note
+
+@enduml

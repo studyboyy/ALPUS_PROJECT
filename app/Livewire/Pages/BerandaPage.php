@@ -761,6 +761,11 @@ class BerandaPage extends Component
 
             $mitraDanKegiatanStats = $this->buildMitraDanKegiatanStats($homeContent, $fallbackPrograms);
             $kinerjaTahunanBerjalan = $this->buildKinerjaTahunanBerjalan($activeYear, $fallbackStat->kpi ?? []);
+            $chartJsData = [
+                'rangeLabel' => 'Per Bulan — ' . $activeYear,
+                'trendMode' => 'year',
+                'chartAll' => ['labels' => [], 'datasets' => []],
+            ];
 
             return view('livewire.pages.beranda-page', [
                 'daftarTahun' => $years,
@@ -770,6 +775,7 @@ class BerandaPage extends Component
                 'profileSections' => $profileSections,
                 'mitraDanKegiatanStats' => $mitraDanKegiatanStats,
                 'kinerjaTahunanBerjalan' => $kinerjaTahunanBerjalan,
+                'chartJsData' => $chartJsData,
             ]);
         }
 

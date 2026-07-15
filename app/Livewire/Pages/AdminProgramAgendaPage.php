@@ -66,6 +66,7 @@ class AdminProgramAgendaPage extends Component
 
     public function hapusAgenda(int $index): void
     {
+        if (!auth()->user()?->canDelete()) { $this->flashStatus('Akses hapus hanya untuk Admin.'); return; }
         $itemId = data_get($this->programItems, $index . '.id');
         if (!$itemId) {
             return;

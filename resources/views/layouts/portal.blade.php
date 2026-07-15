@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
         $homeContent = \App\Models\HomePageSetting::current();
+        $publicProdis = \Illuminate\Support\Facades\Schema::hasTable('prodis')
+            ? \App\Models\Prodi::query()
+                ->where('code', '!=', 'ADMIN')
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+            : collect();
+        $authUser = auth()->user();
+        $selectedPublicProdiId = (int) (session('public_prodi_id')
+            ?: (($authUser && $authUser->role !== 'admin') ? $authUser->prodi_id : null)
+            ?: $publicProdis->first()?->id);
+        $selectedPublicProdi = $publicProdis->firstWhere('id', $selectedPublicProdiId) ?: $publicProdis->first();
         $routeName = request()->route()?->getName();
         $kaprodiNameForDisplay = trim((string) ($homeContent['kaprodi_name'] ?? ''));
         $resolvedProgramName = $kaprodiNameForDisplay !== '' ? $kaprodiNameForDisplay : 'Program Studi';
@@ -268,24 +280,24 @@
     <div id="lw-progress" aria-hidden="true"></div>
 
     <header class="sticky top-0 z-50 border-b border-(--line)/80 bg-white/80 backdrop-blur-md">
-        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
-            <a wire:navigate.hover href="{{ route('home') }}" class="flex items-center gap-3">
+        <div class="mx-auto grid max-w-[92rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 md:px-6 xl:grid-cols-[minmax(280px,1fr)_auto_auto] xl:gap-5 xl:px-8">
+            <a wire:navigate.hover href="{{ route('home') }}" class="flex min-w-0 items-center gap-3">
                 @if (!empty($homeContent['header_logo_url']))
                     <img src="{{ $homeContent['header_logo_url'] }}" alt="Logo Program Studi"
                         class="h-11 w-11 rounded-xl border border-white/50 bg-white object-cover shadow-sm" />
                 @else
                     <div class="logo-badge">PS</div>
                 @endif
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-(--olive)">
-                        {{ $homeContent['header_logo_label'] }}</p>
-                    <h1 class="display-font text-base font-bold leading-tight md:text-xl">
+                <div class="min-w-0">
+                    <p class="truncate text-[10px] font-bold uppercase tracking-[0.2em] text-(--olive) md:text-xs">
+                        {{ $selectedPublicProdi?->name ?: $homeContent['header_logo_label'] }}</p>
+                    <h1 class="display-font line-clamp-2 max-w-[30rem] text-sm font-bold leading-tight text-slate-900 md:text-lg xl:text-xl">
                         {{ $resolvedHeaderTitle }}</h1>
                 </div>
             </a>
 
             {{-- Desktop nav --}}
-            <nav class="hidden flex-wrap items-center gap-2 text-sm font-semibold lg:flex">
+            <nav class="hidden items-center gap-0.5 whitespace-nowrap text-[13px] font-semibold xl:flex 2xl:gap-1">
                 <a wire:navigate.hover href="{{ route('home') }}"
                     class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">Beranda</a>
                 <a wire:navigate.hover href="{{ route('profil') }}"
@@ -302,9 +314,23 @@
                     class="nav-link {{ request()->routeIs('kontak*') ? 'active' : '' }}">Kontak</a>
             </nav>
 
+            @if ($publicProdis->isNotEmpty())<form method="POST" action="{{ route('public.prodi.select') }}" class="hidden shrink-0 xl:block">
+                @csrf
+                <label class="sr-only" for="public-prodi-desktop">Pilih Program Studi</label>
+                <div class="relative">
+                    <select id="public-prodi-desktop" name="prodi_id" onchange="this.form.submit()"
+                        class="w-48 appearance-none rounded-xl border border-blue-200 bg-blue-50 py-2.5 pl-3 pr-9 text-xs font-bold text-blue-800 outline-none transition hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                        @foreach ($publicProdis as $prodi)
+                            <option value="{{ $prodi->id }}" @selected($selectedPublicProdiId === (int) $prodi->id)>{{ $prodi->code }} — {{ $prodi->name }}</option>
+                        @endforeach
+                    </select>
+                    <svg class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+                </div>
+            </form>@endif
+
             {{-- Mobile hamburger --}}
             <button type="button" id="mobile-menu-btn"
-                class="flex h-9 w-9 items-center justify-center rounded-xl border border-(--line) bg-white text-slate-600 transition hover:bg-slate-50 lg:hidden"
+                class="flex h-10 w-10 items-center justify-center rounded-xl border border-(--line) bg-white text-slate-600 transition hover:bg-slate-50 xl:hidden"
                 aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="mobile-menu">
                 <svg id="hamburger-icon" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
@@ -316,8 +342,18 @@
         </div>
 
         {{-- Mobile menu --}}
-        <div id="mobile-menu" class="hidden border-t border-(--line) bg-white/95 backdrop-blur-sm lg:hidden">
+        <div id="mobile-menu" class="hidden border-t border-(--line) bg-white/95 backdrop-blur-sm xl:hidden">
             <nav class="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 md:px-8">
+                @if ($publicProdis->isNotEmpty())<form method="POST" action="{{ route('public.prodi.select') }}" class="mb-2 xl:hidden">
+                    @csrf
+                    <label for="public-prodi-mobile" class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Program Studi Aktif</label>
+                    <select id="public-prodi-mobile" name="prodi_id" onchange="this.form.submit()"
+                        class="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm font-bold text-blue-800 outline-none">
+                        @foreach ($publicProdis as $prodi)
+                            <option value="{{ $prodi->id }}" @selected($selectedPublicProdiId === (int) $prodi->id)>{{ $prodi->code }} — {{ $prodi->name }}</option>
+                        @endforeach
+                    </select>
+                </form>@endif
                 <a wire:navigate.hover href="{{ route('home') }}"
                     class="nav-link {{ request()->routeIs('home') ? 'active' : '' }} text-sm">Beranda</a>
                 <a wire:navigate.hover href="{{ route('profil') }}"

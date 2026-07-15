@@ -1,30 +1,33 @@
 <?php
 
-use App\Livewire\Pages\BerandaPage;
-use App\Livewire\Pages\AdminDashboardPage;
-use App\Livewire\Pages\AdminDashboardDataPage;
-use App\Livewire\Pages\AdminBerandaContentPage;
-use App\Livewire\Pages\AdminAnnualReportPage;
-use App\Livewire\Pages\AdminDocumentPage;
-use App\Livewire\Pages\AdminFeedbackPage;
-use App\Livewire\Pages\AdminProgramAgendaPage;
-use App\Livewire\Pages\AdminProfilePage;
-use App\Livewire\Pages\DokumenPage;
-use App\Livewire\Pages\GaleriPage;
-use App\Livewire\Pages\KontakPage;
-use App\Livewire\Pages\LaporanPage;
-use App\Livewire\Pages\ProfilPage;
-use App\Livewire\Pages\ProgramAgendaDetailPage;
-use App\Livewire\Pages\ProfileDetailPage;
-use App\Livewire\Pages\StatistikPage;
-use App\Livewire\Pages\AdminMonthlyStatsPage;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DocumentCategoryPdfController;
 use App\Http\Controllers\LaporanAllYearsPdfController;
 use App\Http\Controllers\LaporanPdfController;
+use App\Http\Controllers\PublicProdiController;
+use App\Livewire\Pages\AdminAnnualReportPage;
+use App\Livewire\Pages\AdminBerandaContentPage;
+use App\Livewire\Pages\AdminDashboardDataPage;
+use App\Livewire\Pages\AdminDashboardPage;
+use App\Livewire\Pages\AdminDocumentPage;
+use App\Livewire\Pages\AdminFeedbackPage;
+use App\Livewire\Pages\AdminMonthlyStatsPage;
+use App\Livewire\Pages\AdminProfilePage;
+use App\Livewire\Pages\AdminProgramAgendaPage;
+use App\Livewire\Pages\AdminUserPage;
+use App\Livewire\Pages\BerandaPage;
+use App\Livewire\Pages\DokumenPage;
+use App\Livewire\Pages\GaleriPage;
+use App\Livewire\Pages\KontakPage;
+use App\Livewire\Pages\LaporanPage;
+use App\Livewire\Pages\ProfileDetailPage;
+use App\Livewire\Pages\ProfilPage;
+use App\Livewire\Pages\ProgramAgendaDetailPage;
+use App\Livewire\Pages\StatistikPage;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', BerandaPage::class)->name('home');
+Route::post('/pilih-prodi', [PublicProdiController::class, 'select'])->name('public.prodi.select');
 Route::get('/profil', ProfilPage::class)->name('profil');
 Route::get('/profil/{slug}', ProfileDetailPage::class)->name('profil.detail');
 Route::get('/laporan', LaporanPage::class)->name('laporan');
@@ -53,4 +56,5 @@ Route::middleware('admin.auth')->group(function (): void {
     Route::get('/admin/konten-beranda', AdminBerandaContentPage::class)->name('admin.beranda-content');
     Route::get('/admin/dokumen', AdminDocumentPage::class)->name('admin.documents');
     Route::get('/admin/umpan-balik', AdminFeedbackPage::class)->name('admin.feedback');
+    Route::get('/admin/users', AdminUserPage::class)->name('admin.users');
 });

@@ -8,13 +8,35 @@
             <p class="mt-0.5 text-xs text-zinc-500">Kelola sejarah, visi misi, struktur organisasi, SDM, dan capaian strategis.</p>
         </div>
         <span class="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
-            {{ count($sections) }} seksi
+            {{ count($sections) }} bagian profil{{ $selectedProdi ? ' · '.$selectedProdi->name : '' }}
         </span>
     </div>
 
+    @if (auth()->user()?->isAdmin())
+        <div class="rounded-2xl border border-zinc-200 bg-white p-2 shadow-sm">
+            <div class="flex gap-2 overflow-x-auto" role="tablist" aria-label="Pilih program studi">
+                @foreach ($prodis as $prodi)
+                    <button type="button" role="tab"
+                        wire:click="pilihProdi({{ $prodi->id }})"
+                        wire:loading.attr="disabled"
+                        aria-selected="{{ $selectedProdiId === $prodi->id ? 'true' : 'false' }}"
+                        class="shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition {{ $selectedProdiId === $prodi->id ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-600 hover:bg-indigo-50 hover:text-indigo-700' }}">
+                        <span class="mr-1.5 inline-block h-2 w-2 rounded-full {{ $selectedProdiId === $prodi->id ? 'bg-white' : 'bg-indigo-300' }}"></span>
+                        {{ $prodi->code }} — {{ $prodi->name }}
+                    </button>
+                @endforeach
+            </div>
+        </div>
+    @elseif ($selectedProdi)
+        <div class="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700">
+            <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+            {{ $selectedProdi->code }} — {{ $selectedProdi->name }}
+        </div>
+    @endif
+
     {{-- ── Sections ── --}}
     @foreach ($sections as $index => $section)
-        <div class="section-box rounded-2xl p-5" wire:key="section-{{ $section['slug'] }}">
+        <div class="section-box rounded-2xl p-5" wire:key="section-{{ $selectedProdiId }}-{{ $section['slug'] }}">
             @if ($editingSlug === $section['slug'])
                 {{-- Edit mode ── --}}
                 <form wire:submit="simpanSection" class="space-y-4">
@@ -97,7 +119,7 @@
             <svg class="h-8 w-8 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
             </svg>
-            <p class="text-sm text-zinc-400">Belum ada seksi profil.</p>
+            <p class="text-sm text-zinc-400">Belum ada bagian profil.</p>
         </div>
     @endif
 

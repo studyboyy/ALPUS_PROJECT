@@ -5,13 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Concerns\HasProdiScope;
 
 class DashboardYearStat extends Model
 {
     use HasFactory;
+    use HasProdiScope;
 
     protected $fillable = [
         'year',
+        'prodi_id',
         'kpi',
         'trend',
         'capaian',

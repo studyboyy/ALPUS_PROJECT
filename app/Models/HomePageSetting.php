@@ -5,11 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Concerns\HasProdiScope;
 
 class HomePageSetting extends Model
 {
+    use HasProdiScope;
     protected $fillable = [
         'hero_background_url',
+        'prodi_id',
         'hero_items',
         'quick_highlights',
         'header_logo_url',

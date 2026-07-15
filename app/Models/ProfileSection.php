@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Concerns\HasProdiScope;
 
 class ProfileSection extends Model
 {
+    use HasProdiScope;
     protected $fillable = [
         'slug',
+        'prodi_id',
         'title',
         'summary',
         'full_content',

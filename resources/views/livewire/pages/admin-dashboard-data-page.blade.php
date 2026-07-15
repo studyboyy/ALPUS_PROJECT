@@ -13,9 +13,9 @@
                         class="px-3.5 py-1.5 text-xs font-bold transition {{ $tahunDipilih === $tahun ? 'text-white' : 'text-zinc-600 hover:text-indigo-700' }}">
                         {{ $tahun }}
                     </button>
-                    <button type="button" wire:click="hapusTahun({{ $tahun }})"
+                    @if(auth()->user()?->isAdmin())<button type="button" wire:click="hapusTahun({{ $tahun }})"
                         class="border-l px-2.5 py-1.5 text-xs font-bold transition {{ $tahunDipilih === $tahun ? 'border-indigo-400 text-white/70 hover:text-white' : 'border-zinc-200 text-zinc-400 hover:text-rose-600' }}"
-                        title="Hapus tahun {{ $tahun }}">×</button>
+                        title="Hapus tahun {{ $tahun }}">×</button>@endif
                 </div>
             @endforeach
             <form wire:submit="tambahTahun" class="flex items-center gap-1.5">

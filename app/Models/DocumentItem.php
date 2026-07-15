@@ -5,11 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Concerns\HasProdiScope;
 
 class DocumentItem extends Model
 {
+    use HasProdiScope;
     protected $fillable = [
         'title',
+        'prodi_id',
         'description',
         'category',
         'category_slug',
