@@ -4,7 +4,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ isset($title) ? $title . ' — ' : '' }}{{ auth()->user()?->role === 'admin' ? 'Admin Panel' : 'Panel Kaprodi' }}</title>
+    @php
+        $isCentralAdminForTitle = auth()->user()?->role === 'admin';
+        $rolePageTitle = isset($title) ? (string) $title : 'Dashboard';
+        if (! $isCentralAdminForTitle) {
+            $rolePageTitle = trim((string) preg_replace('/\bAdmin\b\s*/i', '', $rolePageTitle));
+        }
+    @endphp
+    <title>{{ $rolePageTitle }} — {{ $isCentralAdminForTitle ? 'Admin Panel' : 'Kaprodi' }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -327,10 +334,10 @@
         $adminProdiName   = trim((string) ($adminHomeContent['header_logo_label'] ?? 'Program Studi'));
         $adminInitials    = collect(explode(' ', $adminProdiName))->take(2)->map(fn($w) => strtoupper(substr($w, 0, 1)))->implode('');
         if ($adminInitials === '') { $adminInitials = 'PS'; }
-        $adminPageTitle   = isset($title) ? $title : 'Dashboard';
         $adminUser        = auth()->user();
         $isCentralAdmin   = $adminUser?->role === 'admin';
         $isProdiManager   = in_array($adminUser?->role, ['kaprodi', 'sekprodi'], true);
+        $adminPageTitle   = $rolePageTitle;
     @endphp
 
     @if (session()->has('status'))
