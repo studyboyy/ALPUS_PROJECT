@@ -58,7 +58,7 @@
                         {{ $items->count() }} dokumen
                     </span>
                     <div class="ml-auto flex items-center gap-3">
-                        <a wire:navigate.hover
+                        <a wire:navigate
                             href="{{ route('dokumen.category', ['kategori' => $kategoriSlugMap[$category] ?? Illuminate\Support\Str::slug($category)]) }}"
                             class="text-xs font-semibold text-(--accent) hover:underline transition-colors">
                             Lihat kategori →

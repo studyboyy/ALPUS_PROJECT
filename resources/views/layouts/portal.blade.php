@@ -5,7 +5,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
-        $homeContent = \App\Models\HomePageSetting::current();
         $publicProdis = \Illuminate\Support\Facades\Schema::hasTable('prodis')
             ? \App\Models\Prodi::query()
                 ->where('code', '!=', 'ADMIN')
@@ -14,13 +13,24 @@
                 ->get()
             : collect();
         $authUser = auth()->user();
-        $selectedPublicProdiId = (int) (session('public_prodi_id')
+        $candidatePublicProdiId = (int) (session('public_prodi_id')
             ?: (($authUser && $authUser->role !== 'admin') ? $authUser->prodi_id : null)
             ?: $publicProdis->first()?->id);
+        $selectedPublicProdiId = $publicProdis->contains('id', $candidatePublicProdiId)
+            ? $candidatePublicProdiId
+            : (int) $publicProdis->first()?->id;
         $selectedPublicProdi = $publicProdis->firstWhere('id', $selectedPublicProdiId) ?: $publicProdis->first();
+        if ($selectedPublicProdi) {
+            session(['public_prodi_id' => $selectedPublicProdi->id]);
+        }
+        $homeContent = \App\Models\HomePageSetting::current();
+        $publicProdiOptions = $publicProdis->map(fn ($prodi) => [
+            'id' => (int) $prodi->id,
+            'code' => $prodi->code,
+            'name' => $prodi->name,
+        ])->values();
         $routeName = request()->route()?->getName();
-        $kaprodiNameForDisplay = trim((string) ($homeContent['kaprodi_name'] ?? ''));
-        $resolvedProgramName = $kaprodiNameForDisplay !== '' ? $kaprodiNameForDisplay : 'Program Studi';
+        $resolvedProgramName = trim((string) ($selectedPublicProdi?->name ?: ($homeContent['header_logo_label'] ?? 'Program Studi')));
         $resolvedHeaderTitle = str_replace(
             '[Nama Prodi]',
             $resolvedProgramName,
@@ -185,7 +195,7 @@
         .pill-inactive { background: #fff; color: #475569; border: 1.5px solid var(--line); }
         .pill-inactive:hover { border-color: var(--accent); color: var(--accent); }
 
-        /* ── Aurora orbs ── */
+        /* â”€â”€ Aurora orbs â”€â”€ */
         .aurora-orb {
             position: fixed;
             border-radius: 50%;
@@ -242,7 +252,7 @@
             100% { transform: translate(60px, -90px) scale(0.97); }
         }
 
-        /* ── Page transition ── */
+        /* â”€â”€ Page transition â”€â”€ */
         #page-content {
             animation: page-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
@@ -281,7 +291,7 @@
 
     <header class="sticky top-0 z-50 border-b border-(--line)/80 bg-white/80 backdrop-blur-md">
         <div class="mx-auto grid max-w-[92rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 md:px-6 xl:grid-cols-[minmax(280px,1fr)_auto_auto] xl:gap-5 xl:px-8">
-            <a wire:navigate.hover href="{{ route('home') }}" class="flex min-w-0 items-center gap-3">
+            <a wire:navigate href="{{ route('home') }}" class="flex min-w-0 items-center gap-3">
                 @if (!empty($homeContent['header_logo_url']))
                     <img src="{{ $homeContent['header_logo_url'] }}" alt="Logo Program Studi"
                         class="h-11 w-11 rounded-xl border border-white/50 bg-white object-cover shadow-sm" />
@@ -298,77 +308,67 @@
 
             {{-- Desktop nav --}}
             <nav class="hidden items-center gap-0.5 whitespace-nowrap text-[13px] font-semibold xl:flex 2xl:gap-1">
-                <a wire:navigate.hover href="{{ route('home') }}"
+                <a wire:navigate href="{{ route('home') }}"
                     class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">Beranda</a>
-                <a wire:navigate.hover href="{{ route('profil') }}"
+                <a wire:navigate href="{{ route('profil') }}"
                     class="nav-link {{ request()->routeIs('profil*') ? 'active' : '' }}">Profil</a>
-                <a wire:navigate.hover href="{{ route('laporan') }}"
+                <a wire:navigate href="{{ route('laporan') }}"
                     class="nav-link {{ request()->routeIs('laporan*') ? 'active' : '' }}">Laporan</a>
-                <a wire:navigate.hover href="{{ route('statistik') }}"
+                <a wire:navigate href="{{ route('statistik') }}"
                     class="nav-link {{ request()->routeIs('statistik*') ? 'active' : '' }}">Statistik</a>
-                <a wire:navigate.hover href="{{ route('dokumen') }}"
+                <a wire:navigate href="{{ route('dokumen') }}"
                     class="nav-link {{ request()->routeIs('dokumen*') ? 'active' : '' }}">Dokumen</a>
-                <a wire:navigate.hover href="{{ route('galeri') }}"
+                <a wire:navigate href="{{ route('galeri') }}"
                     class="nav-link {{ request()->routeIs('galeri*') ? 'active' : '' }}">Galeri</a>
-                <a wire:navigate.hover href="{{ route('kontak') }}"
+                <a wire:navigate href="{{ route('kontak') }}"
                     class="nav-link {{ request()->routeIs('kontak*') ? 'active' : '' }}">Kontak</a>
             </nav>
 
-            @if ($publicProdis->isNotEmpty())<form method="POST" action="{{ route('public.prodi.select') }}" class="hidden shrink-0 xl:block">
-                @csrf
-                <label class="sr-only" for="public-prodi-desktop">Pilih Program Studi</label>
-                <div class="relative">
-                    <select id="public-prodi-desktop" name="prodi_id" onchange="this.form.submit()"
-                        class="w-48 appearance-none rounded-xl border border-blue-200 bg-blue-50 py-2.5 pl-3 pr-9 text-xs font-bold text-blue-800 outline-none transition hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
-                        @foreach ($publicProdis as $prodi)
-                            <option value="{{ $prodi->id }}" @selected($selectedPublicProdiId === (int) $prodi->id)>{{ $prodi->code }} — {{ $prodi->name }}</option>
-                        @endforeach
-                    </select>
-                    <svg class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+            @if ($publicProdis->isNotEmpty())
+                <div class="relative hidden shrink-0 xl:block"
+                    x-data="publicProdiDropdown({
+                        action: @js(route('public.prodi.select')),
+                        selectedId: @js($selectedPublicProdiId),
+                        selectedLabel: @js($selectedPublicProdi?->name ?: 'Program Studi'),
+                        options: @js($publicProdiOptions),
+                    })"
+                    x-cloak>
+                    <button type="button"
+                        @click="toggle()"
+                        class="flex w-[16.5rem] items-center justify-between gap-3 rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-left text-xs font-bold text-blue-800 shadow-sm transition hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        :aria-expanded="open.toString()"
+                        aria-haspopup="listbox">
+                        <span class="min-w-0 truncate" x-text="selectedLabel"></span>
+                        <svg class="h-4 w-4 shrink-0 transition-transform duration-150" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <div x-show="open" x-transition.origin.top.right
+                        class="absolute right-0 z-50 mt-2 w-[16rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5"
+                        role="listbox"
+                        @click.outside="close()"
+                        @keydown.escape.window="close()">
+                        <div class="max-h-72 overflow-auto p-1">
+                            <template x-for="option in options" :key="option.id">
+                                <button type="button"
+                                    @click="choose(option)"
+                                    class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition"
+                                    :class="option.id === selectedId ? 'bg-blue-50 text-blue-800' : 'text-slate-700 hover:bg-slate-50'">
+                                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                                        :class="option.id === selectedId ? 'bg-blue-600' : 'bg-slate-100'">
+                                        <span class="h-2.5 w-2.5 rounded-full"
+                                            :class="option.id === selectedId ? 'bg-white' : 'bg-slate-400'"></span>
+                                    </span>
+                                    <span class="min-w-0">
+                                        <span class="block truncate text-sm font-semibold leading-tight" x-text="option.name"></span>
+                                    </span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
                 </div>
-            </form>@endif
-
-            {{-- Mobile hamburger --}}
-            <button type="button" id="mobile-menu-btn"
-                class="flex h-10 w-10 items-center justify-center rounded-xl border border-(--line) bg-white text-slate-600 transition hover:bg-slate-50 xl:hidden"
-                aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="mobile-menu">
-                <svg id="hamburger-icon" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-                <svg id="close-icon" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-        </div>
-
-        {{-- Mobile menu --}}
-        <div id="mobile-menu" class="hidden border-t border-(--line) bg-white/95 backdrop-blur-sm xl:hidden">
-            <nav class="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 md:px-8">
-                @if ($publicProdis->isNotEmpty())<form method="POST" action="{{ route('public.prodi.select') }}" class="mb-2 xl:hidden">
-                    @csrf
-                    <label for="public-prodi-mobile" class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">Program Studi Aktif</label>
-                    <select id="public-prodi-mobile" name="prodi_id" onchange="this.form.submit()"
-                        class="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm font-bold text-blue-800 outline-none">
-                        @foreach ($publicProdis as $prodi)
-                            <option value="{{ $prodi->id }}" @selected($selectedPublicProdiId === (int) $prodi->id)>{{ $prodi->code }} — {{ $prodi->name }}</option>
-                        @endforeach
-                    </select>
-                </form>@endif
-                <a wire:navigate.hover href="{{ route('home') }}"
-                    class="nav-link {{ request()->routeIs('home') ? 'active' : '' }} text-sm">Beranda</a>
-                <a wire:navigate.hover href="{{ route('profil') }}"
-                    class="nav-link {{ request()->routeIs('profil*') ? 'active' : '' }} text-sm">Profil</a>
-                <a wire:navigate.hover href="{{ route('laporan') }}"
-                    class="nav-link {{ request()->routeIs('laporan*') ? 'active' : '' }} text-sm">Laporan</a>
-                <a wire:navigate.hover href="{{ route('statistik') }}"
-                    class="nav-link {{ request()->routeIs('statistik*') ? 'active' : '' }} text-sm">Statistik</a>
-                <a wire:navigate.hover href="{{ route('dokumen') }}"
-                    class="nav-link {{ request()->routeIs('dokumen*') ? 'active' : '' }} text-sm">Dokumen</a>
-                <a wire:navigate.hover href="{{ route('galeri') }}"
-                    class="nav-link {{ request()->routeIs('galeri*') ? 'active' : '' }} text-sm">Galeri</a>
-                <a wire:navigate.hover href="{{ route('kontak') }}"
-                    class="nav-link {{ request()->routeIs('kontak*') ? 'active' : '' }} text-sm">Kontak</a>
-            </nav>
+            @endif
         </div>
     </header>
 
@@ -387,27 +387,27 @@
                     <p class="text-sm font-bold text-slate-800">{{ $resolvedHeaderTitle }}</p>
                     <p class="mt-1 text-xs text-(--muted)">Portal Laporan Tahunan Program Studi</p>
                     <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-(--muted)">
-                        <span>✉ {{ $homeContent['contact_email'] }}</span>
-                        <span>📞 {{ $homeContent['contact_phone'] }}</span>
+                        <span>âœ‰ {{ $homeContent['contact_email'] }}</span>
+                        <span>ðŸ“ž {{ $homeContent['contact_phone'] }}</span>
                     </div>
                 </div>
                 <nav class="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
-                    <a wire:navigate.hover href="{{ route('home') }}" class="hover:text-(--accent) transition-colors">Beranda</a>
-                    <a wire:navigate.hover href="{{ route('profil') }}" class="hover:text-(--accent) transition-colors">Profil</a>
-                    <a wire:navigate.hover href="{{ route('laporan') }}" class="hover:text-(--accent) transition-colors">Laporan</a>
-                    <a wire:navigate.hover href="{{ route('statistik') }}" class="hover:text-(--accent) transition-colors">Statistik</a>
-                    <a wire:navigate.hover href="{{ route('dokumen') }}" class="hover:text-(--accent) transition-colors">Dokumen</a>
-                    <a wire:navigate.hover href="{{ route('galeri') }}" class="hover:text-(--accent) transition-colors">Galeri</a>
-                    <a wire:navigate.hover href="{{ route('kontak') }}" class="hover:text-(--accent) transition-colors">Kontak</a>
+                    <a wire:navigate href="{{ route('home') }}" class="hover:text-(--accent) transition-colors">Beranda</a>
+                    <a wire:navigate href="{{ route('profil') }}" class="hover:text-(--accent) transition-colors">Profil</a>
+                    <a wire:navigate href="{{ route('laporan') }}" class="hover:text-(--accent) transition-colors">Laporan</a>
+                    <a wire:navigate href="{{ route('statistik') }}" class="hover:text-(--accent) transition-colors">Statistik</a>
+                    <a wire:navigate href="{{ route('dokumen') }}" class="hover:text-(--accent) transition-colors">Dokumen</a>
+                    <a wire:navigate href="{{ route('galeri') }}" class="hover:text-(--accent) transition-colors">Galeri</a>
+                    <a wire:navigate href="{{ route('kontak') }}" class="hover:text-(--accent) transition-colors">Kontak</a>
                 </nav>
             </div>
             <div class="mt-8 border-t border-(--line) pt-5 text-center text-xs text-(--muted)">
-                © {{ now()->year }} {{ $resolvedProgramName }} — Hak Cipta Dilindungi
+                Â© {{ now()->year }} {{ $resolvedProgramName }} â€” Hak Cipta Dilindungi
             </div>
         </div>
     </footer>
 
-    {{-- ── Global Gallery Lightbox (direct child of body — no stacking context issues) ── --}}
+    {{-- â”€â”€ Global Gallery Lightbox (direct child of body â€” no stacking context issues) â”€â”€ --}}
     <div id="gallery-lightbox"
         x-data="{
             open: false,
@@ -458,7 +458,7 @@
             x-transition:leave-end="opacity-0 scale-95"
             style="display:none; position:fixed; inset:0; z-index:9999;">
 
-            {{-- Centering layer — always flex, not toggled by Alpine --}}
+            {{-- Centering layer â€” always flex, not toggled by Alpine --}}
             <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:1.25rem;">
 
                 <div style="
@@ -573,61 +573,124 @@
     </div>{{-- /gallery-lightbox --}}
 
     @livewireScriptConfig
-    <script>
-        // ── Livewire navigate progress bar + page transition ──
-        const lwProgress = document.getElementById('lw-progress');
+    <script data-navigate-once>
+        (() => {
+            if (window.__portalLayoutBound) return;
+            window.__portalLayoutBound = true;
 
-        document.addEventListener('livewire:navigate', () => {
-            lwProgress.classList.remove('is-done');
-            lwProgress.classList.add('is-loading');
-            const content = document.getElementById('page-content');
-            if (content) content.classList.add('page-leaving');
-        });
+            function closeMobileMenu() {
+                const mobileMenu = document.getElementById('mobile-menu');
+                const hamburgerIcon = document.getElementById('hamburger-icon');
+                const closeIcon = document.getElementById('close-icon');
+                const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 
-        document.addEventListener('livewire:navigated', () => {
-            lwProgress.classList.remove('is-loading');
-            lwProgress.classList.add('is-done');
-            setTimeout(() => {
-                lwProgress.classList.remove('is-done');
-                lwProgress.style.width = '';
-            }, 180);
-            const content = document.getElementById('page-content');
-            if (content) {
-                content.classList.remove('page-leaving');
-                content.style.animation = 'none';
-                content.offsetHeight;
-                content.style.animation = '';
+                if (!mobileMenu) return;
+                mobileMenu.classList.add('hidden');
+                hamburgerIcon && hamburgerIcon.classList.remove('hidden');
+                closeIcon && closeIcon.classList.add('hidden');
+                mobileMenuBtn && mobileMenuBtn.setAttribute('aria-expanded', 'false');
             }
-            // Close mobile menu on navigate
-            closeMobileMenu();
-        });
 
-        // ── Mobile menu ──
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenu    = document.getElementById('mobile-menu');
-        const hamburgerIcon = document.getElementById('hamburger-icon');
-        const closeIcon     = document.getElementById('close-icon');
+            window.publicProdiDropdown = (config) => ({
+                open: false,
+                action: config.action,
+                selectedId: Number(config.selectedId || 0),
+                selectedLabel: config.selectedLabel || '',
+                options: config.options || [],
 
-        function openMobileMenu() {
-            mobileMenu.classList.remove('hidden');
-            hamburgerIcon.classList.add('hidden');
-            closeIcon.classList.remove('hidden');
-            mobileMenuBtn.setAttribute('aria-expanded', 'true');
-        }
-        function closeMobileMenu() {
-            if (!mobileMenu) return;
-            mobileMenu.classList.add('hidden');
-            hamburgerIcon && hamburgerIcon.classList.remove('hidden');
-            closeIcon && closeIcon.classList.add('hidden');
-            mobileMenuBtn && mobileMenuBtn.setAttribute('aria-expanded', 'false');
-        }
-        mobileMenuBtn && mobileMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.contains('hidden') ? openMobileMenu() : closeMobileMenu();
-        });
+                toggle() {
+                    this.open = !this.open;
+                },
+
+                close() {
+                    this.open = false;
+                },
+
+                async choose(option) {
+                    if (!option) return;
+                    this.selectedId = Number(option.id || 0);
+                    this.selectedLabel = option.name || '';
+                    this.close();
+                    await this.save(option.id);
+                },
+
+                async save(prodiId) {
+                    const token = document.querySelector('meta[name="csrf-token"]')?.content || window.livewireScriptConfig?.csrf;
+
+                    await fetch(this.action, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                        },
+                        body: new URLSearchParams({ prodi_id: String(prodiId) }).toString(),
+                    });
+
+                    if (window.Livewire && typeof window.Livewire.navigate === 'function') {
+                        window.Livewire.navigate(window.location.pathname + window.location.search);
+                        return;
+                    }
+
+                    window.location.reload();
+                },
+            });
+
+            document.addEventListener('livewire:navigate', () => {
+                const lwProgress = document.getElementById('lw-progress');
+                const content = document.getElementById('page-content');
+
+                lwProgress && lwProgress.classList.remove('is-done');
+                lwProgress && lwProgress.classList.add('is-loading');
+                content && content.classList.add('page-leaving');
+            });
+
+            document.addEventListener('livewire:navigated', () => {
+                const lwProgress = document.getElementById('lw-progress');
+                const content = document.getElementById('page-content');
+
+                if (lwProgress) {
+                    lwProgress.classList.remove('is-loading');
+                    lwProgress.classList.add('is-done');
+                    setTimeout(() => {
+                        lwProgress.classList.remove('is-done');
+                        lwProgress.style.width = '';
+                    }, 180);
+                }
+
+                if (content) {
+                    content.classList.remove('page-leaving');
+                    content.style.animation = 'none';
+                    content.offsetHeight;
+                    content.style.animation = '';
+                }
+
+                closeMobileMenu();
+            });
+
+            document.addEventListener('click', (event) => {
+                const mobileMenuBtn = event.target.closest('#mobile-menu-btn');
+                if (!mobileMenuBtn) return;
+
+                const mobileMenu = document.getElementById('mobile-menu');
+                const hamburgerIcon = document.getElementById('hamburger-icon');
+                const closeIcon = document.getElementById('close-icon');
+
+                if (!mobileMenu) return;
+                const isClosed = mobileMenu.classList.contains('hidden');
+                mobileMenu.classList.toggle('hidden', !isClosed);
+                hamburgerIcon && hamburgerIcon.classList.toggle('hidden', isClosed);
+                closeIcon && closeIcon.classList.toggle('hidden', !isClosed);
+                mobileMenuBtn.setAttribute('aria-expanded', isClosed ? 'true' : 'false');
+            });
+
+        })();
     </script>
 
-    {{-- ── Shared Chart.js Alpine component (used by beranda + statistik) ── --}}
-    <script>
+    {{-- â”€â”€ Shared Chart.js Alpine component (used by beranda + statistik) â”€â”€ --}}
+    <script data-navigate-once>
     window.__prodiChartRegistry = window.__prodiChartRegistry || {};
 
     function prodiChartInit(chartId, initLabels, initDatasets, showLegend) {

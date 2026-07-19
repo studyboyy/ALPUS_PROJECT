@@ -79,7 +79,7 @@
                     <h3 class="text-base font-bold text-slate-800">{{ $category }}</h3>
                     <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">{{ $items->count() }}</span>
                     <div class="ml-auto h-px flex-1 bg-slate-100"></div>
-                    <a wire:navigate.hover
+                    <a wire:navigate
                         href="{{ route('galeri.category', ['kategori' => $kategoriSlugMap[$category] ?? Illuminate\Support\Str::slug($category)]) }}"
                         class="text-xs font-semibold text-slate-400 transition-colors hover:text-(--accent)">
                         Lihat semua →

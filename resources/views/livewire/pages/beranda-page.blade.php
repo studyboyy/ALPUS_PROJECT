@@ -66,7 +66,7 @@
                         {{ data_get($homeContent, 'kaprodi_quote', 'Portal resmi untuk ringkasan kinerja, capaian akademik, statistik, dokumen pendukung, dan dokumentasi kegiatan Program Studi.') }}{{ $namaProdiSuffix !== '' ? ' — ' . $namaProdiSuffix : '' }}
                     </p>
                     <div class="mt-7 flex flex-wrap gap-3">
-                        <a wire:navigate.hover href="{{ route('laporan') }}"
+                        <a wire:navigate href="{{ route('laporan') }}"
                             class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-sky-900 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:shadow-xl">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             Lihat Laporan
@@ -83,12 +83,12 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">Tahun:</span>
                             @foreach ($tahunCepatAwal as $tahun)
-                                <a wire:navigate.hover href="{{ route('laporan', ['year' => $tahun]) }}"
+                                <a wire:navigate href="{{ route('laporan', ['year' => $tahun]) }}"
                                     class="rounded-full border border-white/20 bg-white/8 px-2.5 py-1 text-[11px] font-semibold text-white/80 transition hover:border-white/50 hover:bg-white/15 hover:text-white">{{ $tahun }}</a>
                             @endforeach
                             @if (count($tahunCepatLanjutan) > 0)
                                 @foreach ($tahunCepatLanjutan as $tahun)
-                                    <a wire:navigate.hover href="{{ route('laporan', ['year' => $tahun]) }}"
+                                    <a wire:navigate href="{{ route('laporan', ['year' => $tahun]) }}"
                                         class="rounded-full border border-white/20 bg-white/8 px-2.5 py-1 text-[11px] font-semibold text-white/80 transition hover:border-white/50 hover:bg-white/15 hover:text-white">{{ $tahun }}</a>
                                 @endforeach
                             @endif
@@ -229,10 +229,7 @@
                 @foreach ($statistikAktif['kpi'] as $kpi)
                     <div class="rounded-xl border p-4 {{ $kpi['boxClass'] }}">
                         <p class="text-xs text-(--muted)">{{ $kpi['label'] }}</p>
-                        <p class="mt-1 text-2xl font-bold {{ $kpi['valueClass'] }}">
-                            <span class="js-countup" data-countup="{{ $kpi['countTarget'] }}"
-                                data-decimals="{{ $kpi['decimals'] }}">{{ $kpi['value'] }}</span>
-                        </p>
+                        <p class="mt-1 text-2xl font-bold {{ $kpi['valueClass'] }}">{{ $kpi['value'] }}</p>
                     </div>
                 @endforeach
             </div>
@@ -301,7 +298,7 @@
             </div>
             <div class="grid gap-3 md:grid-cols-2">
                 @foreach ($programPreviewItems as $item)
-                    <a wire:navigate.hover href="{{ $item['detail_url'] }}"
+                    <a wire:navigate href="{{ $item['detail_url'] }}"
                         class="block rounded-xl border p-4 transition hover:opacity-95 {{ $item['boxClass'] }}">
                         <div class="flex flex-wrap items-center gap-2">
                             <span
@@ -322,7 +319,7 @@
                         'max-height:0px;opacity:0;transform:translateY(-8px);'">
                     <div class="grid gap-3 pb-2 md:grid-cols-2">
                         @foreach ($programSisaItems as $item)
-                            <a wire:navigate.hover href="{{ $item['detail_url'] }}"
+                            <a wire:navigate href="{{ $item['detail_url'] }}"
                                 class="block rounded-xl border p-4 transition hover:opacity-95 {{ $item['boxClass'] }}">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span
@@ -388,7 +385,7 @@
                 <p class="text-[11px] font-bold uppercase tracking-widest text-(--olive)">Dokumentasi Terbaru</p>
                 <h3 class="display-font mt-1 text-3xl">Galeri Kegiatan</h3>
             </div>
-            <a wire:navigate.hover href="{{ route('galeri') }}"
+            <a wire:navigate href="{{ route('galeri') }}"
                 class="btn-outline !py-2 !px-4 !text-xs">
                 Lihat Semua
                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -396,7 +393,7 @@
         </div>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach (collect($homeContent['gallery_items'])->reverse()->take(6) as $item)
-                <a wire:navigate.hover href="{{ route('galeri') }}"
+                <a wire:navigate href="{{ route('galeri') }}"
                     class="group overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-blue-200">
                     <div class="relative overflow-hidden">
                         <img src="{{ data_get($item, 'image_url') }}" alt="{{ data_get($item, 'title') }}"
@@ -417,7 +414,7 @@
             @endforeach
         </div>
         <div class="mt-6 text-center">
-            <a wire:navigate.hover href="{{ route('galeri') }}" class="btn-primary">
+            <a wire:navigate href="{{ route('galeri') }}" class="btn-primary">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 Lihat Galeri Lengkap
             </a>
@@ -580,41 +577,6 @@
             }
             window.__berandaCountupBooted = true;
 
-            const animateCount = (el) => {
-                const target = Number(el.dataset.countup || 0);
-                const decimals = Number(el.dataset.decimals || 0);
-
-                if (!Number.isFinite(target)) {
-                    return;
-                }
-
-                const duration = 900;
-                const startTime = performance.now();
-
-                const step = (now) => {
-                    const progress = Math.min((now - startTime) / duration, 1);
-                    const eased = 1 - Math.pow(1 - progress, 3);
-                    const current = target * eased;
-
-                    el.textContent = decimals > 0 ?
-                        current.toLocaleString('id-ID', {
-                            minimumFractionDigits: decimals,
-                            maximumFractionDigits: decimals,
-                        }) :
-                        Math.round(current).toLocaleString('id-ID');
-
-                    if (progress < 1) {
-                        requestAnimationFrame(step);
-                    }
-                };
-
-                requestAnimationFrame(step);
-            };
-
-            const initCountups = () => {
-                document.querySelectorAll('.js-countup').forEach((el) => animateCount(el));
-            };
-
             const initHeroCarousel = () => {
                 const container = document.querySelector('.js-hero-carousel');
                 if (!container) return;
@@ -723,13 +685,10 @@
                 animateProgressBars();
             };
 
-            document.addEventListener('livewire:navigated', initCountups);
             document.addEventListener('livewire:navigated', animateStatVisuals);
             document.addEventListener('livewire:navigated', initHeroCarousel);
-            window.addEventListener('statistik-updated', initCountups);
             window.addEventListener('statistik-updated', animateStatVisuals);
 
-            initCountups();
             animateStatVisuals();
             initHeroCarousel();
         })();

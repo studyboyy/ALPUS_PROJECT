@@ -20,7 +20,97 @@
 
     {{-- ── Count cards row ── --}}
     @php
-        $countCards = [
+        $isCentralAdmin = auth()->user()?->role === 'admin';
+        $countCards = $isCentralAdmin ? [
+            [
+                'label'  => 'Program Studi',
+                'value'  => $totalProdi,
+                'icon'   => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+                'color'  => 'text-indigo-700',
+                'bg'     => 'bg-indigo-50',
+                'ring'   => 'ring-indigo-100',
+                'border' => 'border-t-indigo-500',
+                'link'   => route('admin.users'),
+                'hint'   => 'Prodi aktif',
+            ],
+            [
+                'label'  => 'Total Pengguna',
+                'value'  => $totalUsers,
+                'icon'   => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+                'color'  => 'text-teal-700',
+                'bg'     => 'bg-teal-50',
+                'ring'   => 'ring-teal-100',
+                'border' => 'border-t-teal-500',
+                'link'   => route('admin.users'),
+                'hint'   => 'Semua role',
+            ],
+            [
+                'label'  => 'Data Statistik',
+                'value'  => $totalTahun,
+                'icon'   => 'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-10a4 4 0 100-8 4 4 0 000 8zm11 10v-2a4 4 0 00-3-3.87m-1-11.26a4 4 0 010 7.75',
+                'color'  => 'text-violet-700',
+                'bg'     => 'bg-violet-50',
+                'ring'   => 'ring-violet-100',
+                'border' => 'border-t-violet-500',
+                'link'   => route('admin.dashboard'),
+                'hint'   => 'Total baris tahunan',
+            ],
+            [
+                'label'  => 'Dokumen Publik',
+                'value'  => $totalDokumen,
+                'icon'   => 'M7 3h8l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z',
+                'color'  => 'text-emerald-700',
+                'bg'     => 'bg-emerald-50',
+                'ring'   => 'ring-emerald-100',
+                'border' => 'border-t-emerald-500',
+                'link'   => route('admin.dashboard'),
+                'hint'   => 'Total semua prodi',
+            ],
+            [
+                'label'  => 'Program & Agenda',
+                'value'  => $totalProgram,
+                'icon'   => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+                'color'  => 'text-sky-700',
+                'bg'     => 'bg-sky-50',
+                'ring'   => 'ring-sky-100',
+                'border' => 'border-t-sky-500',
+                'link'   => route('admin.dashboard'),
+                'hint'   => 'Tahun '.$tahunTerbaru,
+            ],
+            [
+                'label'  => 'Laporan Tahunan',
+                'value'  => $totalLaporan,
+                'icon'   => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+                'color'  => 'text-amber-700',
+                'bg'     => 'bg-amber-50',
+                'ring'   => 'ring-amber-100',
+                'border' => 'border-t-amber-500',
+                'link'   => route('admin.dashboard'),
+                'hint'   => 'Total seksi laporan',
+            ],
+            [
+                'label'  => 'Feedback Masuk',
+                'value'  => $totalFeedback,
+                'icon'   => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+                'color'  => 'text-rose-700',
+                'bg'     => 'bg-rose-50',
+                'ring'   => 'ring-rose-100',
+                'border' => 'border-t-rose-500',
+                'link'   => route('admin.dashboard'),
+                'hint'   => $unreadFeedback > 0 ? $unreadFeedback.' belum dibaca' : 'Semua terbaca',
+            ],
+            [
+                'label'  => 'Tahun Terbaru',
+                'value'  => $tahunTerbaru ?: 0,
+                'icon'   => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+                'color'  => 'text-zinc-700',
+                'bg'     => 'bg-zinc-50',
+                'ring'   => 'ring-zinc-100',
+                'border' => 'border-t-zinc-400',
+                'link'   => route('admin.dashboard'),
+                'hint'   => 'Periode monitoring',
+            ],
+        ] : [
             [
                 'label'  => 'Data Tahun',
                 'value'  => $totalTahun,
@@ -78,7 +168,7 @@
             ],
         ];
     @endphp
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         @foreach ($countCards as $card)
             <a href="{{ $card['link'] }}"
                 class="section-box group rounded-2xl border-t-4 {{ $card['border'] }} p-4 transition-all hover:-translate-y-0.5 hover:shadow-md">
@@ -148,15 +238,59 @@
             </div>
         </div>
     @endif
-
-    {{-- ── Bottom row: capaian + quick links ── --}}
+    @if ($isCentralAdmin)
+        <section class="section-box overflow-hidden rounded-2xl">
+            <div class="border-b border-zinc-100 px-5 py-4">
+                <p class="text-sm font-bold text-zinc-800">Monitoring Semua Program Studi</p>
+                <p class="mt-0.5 text-xs text-zinc-500">Ringkasan baca-saja untuk melihat kelengkapan data tiap prodi.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[900px] text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-zinc-200 bg-zinc-50/80 text-[10px] font-extrabold uppercase tracking-wider text-zinc-500">
+                            <th class="px-5 py-3">Program Studi</th>
+                            <th class="px-4 py-3 text-right">User</th>
+                            <th class="px-4 py-3 text-right">Tahun Data</th>
+                            <th class="px-4 py-3 text-right">Dokumen</th>
+                            <th class="px-4 py-3 text-right">Program</th>
+                            <th class="px-4 py-3 text-right">Mahasiswa</th>
+                            <th class="px-4 py-3 text-right">IPK</th>
+                            <th class="px-4 py-3 text-right">Publikasi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($prodiSummaries as $summary)
+                            <tr class="border-b border-zinc-100 last:border-0 hover:bg-zinc-50/70">
+                                <td class="px-5 py-4">
+                                    <div class="font-bold text-zinc-900">{{ $summary['name'] }}</div>
+                                    <div class="mt-0.5 text-xs font-semibold text-zinc-400">{{ $summary['code'] }}{{ $summary['latest_year'] ? ' - Data terbaru '.$summary['latest_year'] : '' }}</div>
+                                </td>
+                                <td class="px-4 py-4 text-right font-semibold text-zinc-700">{{ number_format($summary['users'], 0, ',', '.') }}</td>
+                                <td class="px-4 py-4 text-right font-semibold text-zinc-700">{{ number_format($summary['years'], 0, ',', '.') }}</td>
+                                <td class="px-4 py-4 text-right font-semibold text-zinc-700">{{ number_format($summary['documents'], 0, ',', '.') }}</td>
+                                <td class="px-4 py-4 text-right font-semibold text-zinc-700">{{ number_format($summary['programs'], 0, ',', '.') }}</td>
+                                <td class="px-4 py-4 text-right font-semibold text-indigo-700">{{ number_format($summary['mahasiswa'], 0, ',', '.') }}</td>
+                                <td class="px-4 py-4 text-right font-semibold text-teal-700">{{ number_format($summary['ipk'], 2, ',', '.') }}</td>
+                                <td class="px-4 py-4 text-right font-semibold text-amber-700">{{ number_format($summary['publikasi'], 0, ',', '.') }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="8" class="px-5 py-10 text-center text-sm text-zinc-400">Belum ada program studi aktif.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    @endif
+{{-- ── Bottom row: capaian + quick links ── --}}
     <div class="grid gap-6 lg:grid-cols-3">
 
         {{-- Capaian persentase --}}
         <div class="section-box rounded-2xl p-5 lg:col-span-2">
             <div class="mb-4 flex items-center justify-between">
                 <p class="text-sm font-bold text-zinc-800">Capaian Indikator — {{ $tahunTerbaru }}</p>
-                <a href="{{ route('admin.dashboard-data') }}" class="text-xs font-semibold text-indigo-600 hover:underline">Edit →</a>
+                @if (! $isCentralAdmin)
+                    <a href="{{ route('admin.dashboard-data') }}" class="text-xs font-semibold text-indigo-600 hover:underline">Edit</a>
+                @endif
             </div>
             @if (!empty($capaian))
                 <div class="space-y-3">
@@ -189,7 +323,9 @@
                 <p class="mb-3 text-xs font-bold uppercase tracking-widest text-zinc-400">Akses Cepat</p>
                 <div class="space-y-1.5">
                     @php
-                        $quickLinks = [
+                        $quickLinks = $isCentralAdmin ? [
+                            ['label'=>'User & Program Studi','route'=>'admin.users',          'icon'=>'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m7-10a4 4 0 100-8 4 4 0 000 8zm11 10v-2a4 4 0 00-3-3.87m-1-11.26a4 4 0 010 7.75'],
+                        ] : [
                             ['label'=>'Kelola Statistik',   'route'=>'admin.dashboard-data',  'icon'=>'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'],
                             ['label'=>'Statistik Bulanan',  'route'=>'admin.monthly-stats',   'icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
                             ['label'=>'Konten Beranda',     'route'=>'admin.beranda-content', 'icon'=>'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z'],
@@ -198,7 +334,7 @@
                         ];
                     @endphp
                     @foreach ($quickLinks as $ql)
-                        <a wire:navigate.hover href="{{ route($ql['route']) }}"
+                        <a wire:navigate href="{{ route($ql['route']) }}"
                             class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-zinc-600 transition hover:bg-indigo-50 hover:text-indigo-700">
                             <svg class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="{{ $ql['icon'] }}"/>
@@ -213,7 +349,7 @@
             </div>
 
             {{-- Recent feedback --}}
-            @if ($recentFeedback->isNotEmpty())
+            @if (! $isCentralAdmin && $recentFeedback->isNotEmpty())
                 <div class="section-box rounded-2xl p-4">
                     <div class="mb-3 flex items-center justify-between">
                         <p class="text-xs font-bold uppercase tracking-widest text-zinc-400">Feedback Terbaru</p>

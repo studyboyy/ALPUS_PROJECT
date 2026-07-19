@@ -100,7 +100,9 @@ class DashboardProgramItem extends Model
             return;
         }
 
-        static::query()->insert(static::defaults());
+        foreach (static::defaults() as $payload) {
+            static::query()->create($payload);
+        }
     }
 
     public static function ensureYear(int $year): void
@@ -113,6 +115,8 @@ class DashboardProgramItem extends Model
             return;
         }
 
-        static::query()->insert(static::defaults($year));
+        foreach (static::defaults($year) as $payload) {
+            static::query()->create($payload);
+        }
     }
 }

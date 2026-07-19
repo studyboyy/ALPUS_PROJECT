@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
+use App\Models\User;
 use App\Models\Concerns\HasProdiScope;
 
 class HomePageSetting extends Model
@@ -111,7 +112,7 @@ class HomePageSetting extends Model
                 ],
             ],
             'contact_map_embed_url' => 'https://maps.google.com/maps?q=STMIK+JABAR&output=embed',
-            'kaprodi_name' => 'Dr. Nama Kepala Prodi',
+            'kaprodi_name' => 'Nama Kepala Prodi',
             'kaprodi_title' => 'Kepala Program Studi',
             'kaprodi_quote' => 'Laporan ini tidak hanya memotret capaian, tetapi menjadi kompas evaluasi berkelanjutan untuk membangun budaya mutu, inovasi, dan kolaborasi di Program Studi kami.',
             'kaprodi_photo_url' => 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=220&q=80',
@@ -272,12 +273,56 @@ class HomePageSetting extends Model
             'contact_map_embed_url' => $row->contact_map_embed_url !== null
                 ? (string) $row->contact_map_embed_url
                 : static::defaults()['contact_map_embed_url'],
-            'kaprodi_name' => (string) ($row->kaprodi_name ?: static::defaults()['kaprodi_name']),
+            'kaprodi_name' => static::resolveKaprodiDisplayName($row),
             'kaprodi_title' => (string) ($row->kaprodi_title ?: static::defaults()['kaprodi_title']),
             'kaprodi_quote' => (string) ($row->kaprodi_quote ?: static::defaults()['kaprodi_quote']),
             'kaprodi_photo_url' => (string) ($row->kaprodi_photo_url ?: static::defaults()['kaprodi_photo_url']),
             'gallery_items' => $galleryItemsPayload->all(),
         ];
+    }
+
+    private static function resolveKaprodiDisplayName(self $row): string
+    {
+        $stored = static::stripHonorifics((string) ($row->kaprodi_name ?: static::defaults()['kaprodi_name']));
+
+        if ($stored !== '' && ! str_contains(mb_strtolower($stored), 'kaprodi')) {
+            return $stored;
+        }
+
+        if (empty($row->prodi_id)) {
+            return $stored;
+        }
+
+        $user = User::query()
+            ->where('prodi_id', (int) $row->prodi_id)
+            ->where('role', 'kaprodi')
+            ->orderBy('id')
+            ->first();
+
+        if ($user) {
+            $resolved = static::stripHonorifics((string) $user->name);
+            return $resolved !== '' ? $resolved : (string) $user->name;
+        }
+
+        return $stored;
+    }
+
+    private static function stripHonorifics(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        $value = preg_replace('/^\s*(?:drs?|prof|ir|h|hj|apt)\.?\s*/iu', '', $value) ?? $value;
+        $value = preg_replace('/\s*,\s*.*$/u', '', $value) ?? $value;
+        $value = trim($value);
+
+        if ($value !== '' && $value === mb_strtoupper($value)) {
+            $value = Str::title(mb_strtolower($value));
+        }
+
+        return $value;
     }
 
     private static function normalizeSocialLinks(?array $links): \Illuminate\Support\Collection

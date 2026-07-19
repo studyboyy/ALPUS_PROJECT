@@ -3,6 +3,8 @@
 namespace App\Livewire\Pages;
 
 use App\Models\HomePageSetting;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -39,6 +41,7 @@ class AdminBerandaContentPage extends Component
     public array $galleryImageFiles = [];
     public $headerLogoFile;
     public $kaprodiPhotoFile;
+    public string $croppedHeaderLogoDataUrl = '';
 
     public function mount(): void
     {
@@ -232,12 +235,11 @@ class AdminBerandaContentPage extends Component
         $this->validate([
             'headerLogoLabel' => ['required', 'string', 'max:120'],
             'headerTitleText' => ['required', 'string', 'max:180'],
-            'headerLogoFile' => ['nullable', 'image', 'max:4096'],
+            'croppedHeaderLogoDataUrl' => ['nullable', 'string'],
         ]);
 
-        if ($this->headerLogoFile) {
-            $path = $this->headerLogoFile->store('home-content/header', 'public');
-            $this->headerLogoUrl = asset('storage/' . $path);
+        if ($this->croppedHeaderLogoDataUrl !== '') {
+            $this->headerLogoUrl = $this->storeCroppedHeaderLogo($this->croppedHeaderLogoDataUrl);
         }
 
         $row = $this->getSettingsRow();
@@ -249,6 +251,7 @@ class AdminBerandaContentPage extends Component
         $row->save();
 
         $this->headerLogoFile = null;
+        $this->croppedHeaderLogoDataUrl = '';
         $this->flashStatus('Header portal berhasil dipublikasikan.');
     }
 
@@ -501,6 +504,28 @@ class AdminBerandaContentPage extends Component
     {
         session()->flash('status', $message);
         $this->dispatch('admin-toast', message: $message);
+    }
+
+    private function storeCroppedHeaderLogo(string $dataUrl): string
+    {
+        if (! preg_match('/^data:image\/(png|jpe?g|webp);base64,/', $dataUrl, $match)) {
+            $this->addError('croppedHeaderLogoDataUrl', 'Format hasil crop logo tidak valid.');
+            return $this->headerLogoUrl;
+        }
+
+        $extension = $match[1] === 'jpeg' ? 'jpg' : $match[1];
+        $payload = substr($dataUrl, strpos($dataUrl, ',') + 1);
+        $binary = base64_decode($payload, true);
+
+        if ($binary === false) {
+            $this->addError('croppedHeaderLogoDataUrl', 'Logo hasil crop gagal diproses.');
+            return $this->headerLogoUrl;
+        }
+
+        $path = 'home-content/header/logo-'.Str::uuid().'.'.$extension;
+        Storage::disk('public')->put($path, $binary);
+
+        return asset('storage/'.$path);
     }
 
     public function render()

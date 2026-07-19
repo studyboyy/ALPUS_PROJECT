@@ -48,13 +48,16 @@ Route::redirect('/admin/login', '/login');
 
 Route::middleware('admin.auth')->group(function (): void {
     Route::get('/admin', AdminDashboardPage::class)->name('admin.dashboard');
-    Route::get('/admin/dashboard-data', AdminDashboardDataPage::class)->name('admin.dashboard-data');
-    Route::get('/admin/laporan-tahunan', AdminAnnualReportPage::class)->name('admin.annual-report');
-    Route::get('/admin/program-agenda', AdminProgramAgendaPage::class)->name('admin.program-agenda');
-    Route::get('/admin/bulanan-statistik', AdminMonthlyStatsPage::class)->name('admin.monthly-stats');
-    Route::get('/admin/profil', AdminProfilePage::class)->name('admin.profile');
-    Route::get('/admin/konten-beranda', AdminBerandaContentPage::class)->name('admin.beranda-content');
-    Route::get('/admin/dokumen', AdminDocumentPage::class)->name('admin.documents');
-    Route::get('/admin/umpan-balik', AdminFeedbackPage::class)->name('admin.feedback');
-    Route::get('/admin/users', AdminUserPage::class)->name('admin.users');
+    Route::get('/admin/users', AdminUserPage::class)->middleware('role:admin')->name('admin.users');
+
+    Route::middleware('role:kaprodi,sekprodi')->group(function (): void {
+        Route::get('/admin/dashboard-data', AdminDashboardDataPage::class)->name('admin.dashboard-data');
+        Route::get('/admin/bulanan-statistik', AdminMonthlyStatsPage::class)->name('admin.monthly-stats');
+        Route::get('/admin/laporan-tahunan', AdminAnnualReportPage::class)->name('admin.annual-report');
+        Route::get('/admin/program-agenda', AdminProgramAgendaPage::class)->name('admin.program-agenda');
+        Route::get('/admin/profil', AdminProfilePage::class)->name('admin.profile');
+        Route::get('/admin/konten-beranda', AdminBerandaContentPage::class)->name('admin.beranda-content');
+        Route::get('/admin/dokumen', AdminDocumentPage::class)->name('admin.documents');
+        Route::get('/admin/umpan-balik', AdminFeedbackPage::class)->name('admin.feedback');
+    });
 });

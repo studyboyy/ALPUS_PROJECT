@@ -23,7 +23,7 @@ class AdminUserPage extends Component
 
     public string $email = '';
 
-    public string $role = 'kaprodi';
+    public string $role = 'sekprodi';
 
     public ?int $prodi_id = null;
 
@@ -62,7 +62,7 @@ class AdminUserPage extends Component
     public function resetForm(): void
     {
         $this->reset(['editingId', 'name', 'username', 'email', 'password']);
-        $this->role = 'kaprodi';
+        $this->role = 'sekprodi';
         $this->prodi_id = Prodi::query()->where('code', '!=', 'ADMIN')->value('id');
     }
 
@@ -70,18 +70,22 @@ class AdminUserPage extends Component
     {
         $this->validate([
             'name' => ['required', 'string', 'max:120'],
-            'username' => ['required', 'string', 'max:80', 'alpha_dash:ascii', 'unique:users,username,'.($this->editingId ?? 'NULL')],
+            'username' => ['required', 'string', 'max:80', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:users,username,'.($this->editingId ?? 'NULL')],
             'email' => ['required', 'email', 'max:160', 'unique:users,email,'.($this->editingId ?? 'NULL')],
             'role' => ['required', 'in:admin,kaprodi,sekprodi'],
-            'prodi_id' => ['required', 'exists:prodis,id'],
+            'prodi_id' => [$this->role === 'admin' ? 'nullable' : 'required', 'exists:prodis,id'],
             'password' => [$this->editingId ? 'nullable' : 'required', 'string', 'min:8'],
+        ], [
+            'username.regex' => 'Username hanya boleh berisi huruf, angka, titik, strip, dan underscore.',
         ]);
 
-        $selectedProdi = Prodi::query()->findOrFail($this->prodi_id);
-        if ($this->role !== 'admin' && $selectedProdi->code === 'ADMIN') {
-            $this->addError('prodi_id', 'Kaprodi atau Sekprodi harus terhubung ke Program Studi.');
+        if ($this->role !== 'admin') {
+            $selectedProdi = Prodi::query()->findOrFail($this->prodi_id);
+            if ($selectedProdi->code === 'ADMIN') {
+                $this->addError('prodi_id', 'Kaprodi atau Sekprodi harus terhubung ke Program Studi.');
 
-            return;
+                return;
+            }
         }
         if ($this->role === 'admin') {
             $this->prodi_id = Prodi::query()->where('code', 'ADMIN')->value('id');
@@ -118,9 +122,11 @@ class AdminUserPage extends Component
             'newProdiCode' => ['required', 'string', 'max:20', 'alpha_dash', 'unique:prodis,code'],
             'newProdiName' => ['required', 'string', 'max:160'],
             'newKaprodiName' => ['required', 'string', 'max:120'],
-            'newKaprodiUsername' => ['required', 'string', 'max:80', 'alpha_dash:ascii', 'unique:users,username'],
+            'newKaprodiUsername' => ['required', 'string', 'max:80', 'regex:/^[A-Za-z0-9._-]+$/', 'unique:users,username'],
             'newKaprodiEmail' => ['required', 'email', 'max:160', 'unique:users,email'],
             'newKaprodiPassword' => ['required', 'string', 'min:8'],
+        ], [
+            'newKaprodiUsername.regex' => 'Username kaprodi hanya boleh berisi huruf, angka, titik, strip, dan underscore.',
         ]);
 
         DB::transaction(function () use ($validated, $provisioner): void {
@@ -130,7 +136,7 @@ class AdminUserPage extends Component
                 'is_active' => true,
             ]);
 
-            $provisioner->cloneStarterData($prodi);
+            $provisioner->cloneStarterData($prodi, $validated['newKaprodiName']);
 
             User::query()->create([
                 'name' => $validated['newKaprodiName'],

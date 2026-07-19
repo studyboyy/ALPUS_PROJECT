@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Prodi;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class PublicProdiController extends Controller
 {
-    public function select(Request $request): RedirectResponse
+    public function select(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'prodi_id' => ['required', 'integer', 'exists:prodis,id'],
@@ -21,6 +22,15 @@ class PublicProdiController extends Controller
             ->firstOrFail();
 
         $request->session()->put('public_prodi_id', $prodi->id);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'ok' => true,
+                'prodi_id' => $prodi->id,
+                'prodi_name' => $prodi->name,
+                'prodi_code' => $prodi->code,
+            ]);
+        }
 
         return back();
     }

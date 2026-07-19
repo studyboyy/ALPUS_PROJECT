@@ -8,6 +8,8 @@ use App\Models\DashboardMonthlyStat;
 use App\Models\DashboardProgramItem;
 use App\Models\DashboardYearStat;
 use App\Models\DocumentItem;
+use App\Models\Prodi;
+use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -20,9 +22,14 @@ class AdminDashboardPage extends Component
     public function render()
     {
         // ── Aggregate counts ──
+        $isCentralAdmin = auth()->user()?->role === 'admin';
+
         $totalTahun    = DashboardYearStat::query()->count();
         $tahunTerbaru  = DashboardYearStat::query()->max('year');
-        $statTerbaru   = $tahunTerbaru
+        $latestStats   = $tahunTerbaru
+            ? DashboardYearStat::query()->where('year', $tahunTerbaru)->get()
+            : collect();
+        $statTerbaru   = $tahunTerbaru && ! $isCentralAdmin
             ? DashboardYearStat::query()->where('year', $tahunTerbaru)->first()
             : null;
 
@@ -37,37 +44,67 @@ class AdminDashboardPage extends Component
         $unreadFeedback = Schema::hasTable('contact_feedback')
             ? ContactFeedback::query()->whereNull('read_at')->count()
             : 0;
+        $totalProdi = Schema::hasTable('prodis')
+            ? Prodi::query()->where('code', '!=', 'ADMIN')->where('is_active', true)->count()
+            : 0;
+        $totalUsers = Schema::hasTable('users') ? User::query()->count() : 0;
 
         // ── KPI untuk tahun terbaru ──
-        $kpiLatest = [
-            'mahasiswa' => (float) data_get($statTerbaru?->kpi, '0.value', 0),
-            'ipk'       => (float) data_get($statTerbaru?->kpi, '1.value', 0),
-            'dosen'     => (float) data_get($statTerbaru?->kpi, '2.value', 0),
-            'publikasi' => (float) data_get($statTerbaru?->kpi, '3.value', 0),
-        ];
+        $kpiLatest = $isCentralAdmin
+            ? $this->aggregateKpi($latestStats)
+            : $this->extractKpi($statTerbaru);
 
         // ── Tren 5 tahun terakhir (untuk line chart) ──
         $allStats = DashboardYearStat::query()->orderBy('year')->get();
-        $trendData = $allStats->map(fn($s) => [
-            'year'      => $s->year,
-            'mahasiswa' => (float) data_get($s->kpi, '0.value', 0),
-            'ipk'       => (float) data_get($s->kpi, '1.value', 0),
-            'dosen'     => (float) data_get($s->kpi, '2.value', 0),
-            'publikasi' => (float) data_get($s->kpi, '3.value', 0),
-        ])->values()->all();
+        $trendData = $isCentralAdmin
+            ? $allStats
+                ->groupBy('year')
+                ->map(fn($stats, $year) => ['year' => $year] + $this->aggregateKpi($stats))
+                ->sortBy('year')
+                ->values()
+                ->all()
+            : $allStats->map(fn($s) => ['year' => $s->year] + $this->extractKpi($s))->values()->all();
 
         // ── Polylines untuk mini line chart ──
         $charts = $this->buildMiniCharts($trendData);
 
         // ── Capaian terbaru ──
-        $capaian = collect($statTerbaru?->capaian ?? [])->map(fn($c) => [
-            'label'   => data_get($c, 'label', '-'),
-            'percent' => (float) data_get($c, 'percent', 0),
-        ])->all();
+        $capaian = $isCentralAdmin
+            ? $this->aggregateCapaian($latestStats)
+            : collect($statTerbaru?->capaian ?? [])->map(fn($c) => [
+                'label'   => data_get($c, 'label', '-'),
+                'percent' => (float) data_get($c, 'percent', 0),
+            ])->all();
 
         // ── Feedback terbaru (5 terakhir) ──
         $recentFeedback = Schema::hasTable('contact_feedback')
             ? ContactFeedback::query()->orderByDesc('created_at')->limit(5)->get()
+            : collect();
+        $prodiSummaries = Schema::hasTable('prodis')
+            ? Prodi::query()
+                ->where('code', '!=', 'ADMIN')
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+                ->map(function (Prodi $prodi): array {
+                    $latest = DashboardYearStat::query()
+                        ->where('prodi_id', $prodi->id)
+                        ->orderByDesc('year')
+                        ->first();
+
+                    return [
+                        'code' => $prodi->code,
+                        'name' => $prodi->name,
+                        'users' => User::query()->where('prodi_id', $prodi->id)->count(),
+                        'years' => DashboardYearStat::query()->where('prodi_id', $prodi->id)->count(),
+                        'documents' => DocumentItem::query()->where('prodi_id', $prodi->id)->count(),
+                        'programs' => DashboardProgramItem::query()->where('prodi_id', $prodi->id)->count(),
+                        'latest_year' => $latest?->year,
+                        'mahasiswa' => (float) data_get($latest?->kpi, '0.value', 0),
+                        'ipk' => (float) data_get($latest?->kpi, '1.value', 0),
+                        'publikasi' => (float) data_get($latest?->kpi, '3.value', 0),
+                    ];
+                })
             : collect();
 
         return view('livewire.pages.admin-dashboard-page', [
@@ -78,11 +115,14 @@ class AdminDashboardPage extends Component
             'unreadFeedback' => $unreadFeedback,
             'totalProgram'   => $totalProgram,
             'totalLaporan'   => $totalLaporan,
+            'totalProdi'     => $totalProdi,
+            'totalUsers'     => $totalUsers,
             'kpiLatest'      => $kpiLatest,
             'trendData'      => $trendData,
             'charts'         => $charts,
             'capaian'        => $capaian,
             'recentFeedback' => $recentFeedback,
+            'prodiSummaries' => $prodiSummaries,
         ]);
     }
 
@@ -122,5 +162,44 @@ class AdminDashboardPage extends Component
             'dosen'     => $build(array_column($trendData, 'dosen')),
             'publikasi' => $build(array_column($trendData, 'publikasi')),
         ];
+    }
+
+    private function extractKpi(?DashboardYearStat $stat): array
+    {
+        return [
+            'mahasiswa' => (float) data_get($stat?->kpi, '0.value', 0),
+            'ipk'       => (float) data_get($stat?->kpi, '1.value', 0),
+            'dosen'     => (float) data_get($stat?->kpi, '2.value', 0),
+            'publikasi' => (float) data_get($stat?->kpi, '3.value', 0),
+        ];
+    }
+
+    private function aggregateKpi($stats): array
+    {
+        $items = collect($stats);
+
+        return [
+            'mahasiswa' => $items->sum(fn($stat) => (float) data_get($stat->kpi, '0.value', 0)),
+            'ipk'       => round($items->avg(fn($stat) => (float) data_get($stat->kpi, '1.value', 0)) ?: 0, 2),
+            'dosen'     => $items->sum(fn($stat) => (float) data_get($stat->kpi, '2.value', 0)),
+            'publikasi' => $items->sum(fn($stat) => (float) data_get($stat->kpi, '3.value', 0)),
+        ];
+    }
+
+    private function aggregateCapaian($stats): array
+    {
+        return collect($stats)
+            ->flatMap(fn($stat) => collect($stat->capaian ?? [])->map(fn($item, $index) => [
+                'index' => $index,
+                'label' => data_get($item, 'label', '-'),
+                'percent' => (float) data_get($item, 'percent', 0),
+            ]))
+            ->groupBy('index')
+            ->map(fn($items) => [
+                'label' => $items->first()['label'] ?? '-',
+                'percent' => round($items->avg('percent') ?: 0, 1),
+            ])
+            ->values()
+            ->all();
     }
 }

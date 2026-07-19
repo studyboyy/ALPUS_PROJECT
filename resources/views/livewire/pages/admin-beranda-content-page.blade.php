@@ -43,7 +43,9 @@
             <h3 class="text-sm font-bold text-zinc-800">Header Portal</h3>
             <p class="mt-1 text-xs text-zinc-500">Teks label di atas logo, judul besar, dan file logo.</p>
 
-            <form wire:submit="simpanHeaderPortal" class="mt-5 space-y-4">
+            <form wire:submit="simpanHeaderPortal"
+                x-data="headerLogoCropper({ initialLogo: @js($headerLogoUrl) })"
+                class="mt-5 space-y-4">
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
                         <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Teks Atas Logo</label>
@@ -56,9 +58,11 @@
                             class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Upload Logo (opsional)</label>
-                        <input wire:model="headerLogoFile" type="file" accept="image/*"
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Upload Logo</label>
+                        <input type="file" accept="image/*" @change="selectFile($event)"
                             class="w-full rounded-xl border border-dashed border-indigo-300 bg-indigo-50/40 px-3.5 py-2.5 text-sm text-indigo-700" />
+                        <p class="mt-1.5 text-[11px] text-zinc-400">Logo akan dicrop persegi 1:1 sebelum disimpan.</p>
+                        @error('croppedHeaderLogoDataUrl')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                     </div>
                 </div>
 
@@ -66,14 +70,11 @@
                 <div class="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
                     <div class="flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-4 py-3.5">
                         <div class="flex items-center gap-3">
-                            @if ($headerLogoFile || $headerLogoUrl)
-                                <img src="{{ $headerLogoFile ? $headerLogoFile->temporaryUrl() : $headerLogoUrl }}"
-                                    class="h-10 w-10 rounded-lg border border-zinc-200 object-cover shadow-sm" alt="Logo"/>
-                            @else
-                                <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 grid place-items-center text-white text-xs font-bold shadow-sm">
-                                    {{ $adminInitials ?? 'PS' }}
-                                </div>
-                            @endif
+                            <img x-show="previewLogoUrl" :src="previewLogoUrl"
+                                class="h-10 w-10 rounded-lg border border-zinc-200 object-cover shadow-sm" alt="Logo"/>
+                            <div x-show="!previewLogoUrl" class="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 grid place-items-center text-white text-xs font-bold shadow-sm">
+                                PS
+                            </div>
                             <div>
                                 <p class="text-[10px] font-bold uppercase tracking-wider text-teal-700">{{ $headerLogoLabel }}</p>
                                 <p class="text-sm font-bold text-zinc-800 leading-tight">{{ $headerTitleText }}</p>
@@ -83,6 +84,46 @@
                             @foreach(['Beranda','Profil','Laporan','Statistik'] as $nav)
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $loop->first ? 'bg-indigo-100 text-indigo-700' : 'text-zinc-500' }}">{{ $nav }}</span>
                             @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="open" x-cloak class="fixed inset-0 z-[9999] grid place-items-center bg-slate-950/75 p-4">
+                    <div class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
+                        <div class="mb-4 flex items-center justify-between gap-3">
+                            <div>
+                                <h4 class="text-sm font-extrabold text-zinc-900">Crop Logo</h4>
+                                <p class="mt-0.5 text-xs text-zinc-500">Geser gambar dan atur zoom sampai pas di kotak.</p>
+                            </div>
+                            <button type="button" @click="cancel()"
+                                class="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-bold text-zinc-500 hover:bg-zinc-50">Tutup</button>
+                        </div>
+
+                        <div class="mx-auto h-72 w-72 overflow-hidden rounded-2xl border-2 border-indigo-500 bg-zinc-100 shadow-inner"
+                            x-ref="cropBox"
+                            @mousedown.prevent="startDrag($event)"
+                            @mousemove.prevent="drag($event)"
+                            @mouseup="stopDrag()"
+                            @mouseleave="stopDrag()"
+                            @touchstart.prevent="startDrag($event.touches[0])"
+                            @touchmove.prevent="drag($event.touches[0])"
+                            @touchend="stopDrag()">
+                            <img x-ref="cropImage" :src="sourceUrl" alt="Crop logo"
+                                class="h-full w-full select-none object-contain"
+                                :style="`transform: translate(${offsetX}px, ${offsetY}px) scale(${zoom}); transform-origin: center;`"
+                                draggable="false"
+                                @load="imageLoaded()">
+                        </div>
+
+                        <label class="mt-4 block text-xs font-semibold text-zinc-600">Zoom</label>
+                        <input type="range" :min="minZoom" max="3" step="0.01" x-model.number="zoom" @input="clampOffset()"
+                            class="mt-2 w-full accent-indigo-600">
+
+                        <div class="mt-5 flex justify-end gap-2">
+                            <button type="button" @click="cancel()"
+                                class="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50">Batal</button>
+                            <button type="button" @click="applyCrop()"
+                                class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700">Pakai Logo</button>
                         </div>
                     </div>
                 </div>
@@ -160,7 +201,7 @@
                             class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Jabatan / Gelar</label>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Jabatan</label>
                         <input wire:model.defer="kaprodiTitle" type="text"
                             class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
                     </div>
@@ -561,3 +602,133 @@
     </div>
 
 </div>
+
+<script>
+    window.headerLogoCropper = window.headerLogoCropper || function (config) {
+        return {
+            open: false,
+            sourceUrl: '',
+            previewLogoUrl: config.initialLogo || '',
+            zoom: 1,
+            minZoom: 1,
+            offsetX: 0,
+            offsetY: 0,
+            dragging: false,
+            lastX: 0,
+            lastY: 0,
+            naturalWidth: 0,
+            naturalHeight: 0,
+
+            selectFile(event) {
+                const file = event.target.files && event.target.files[0];
+                if (!file) return;
+
+                this.sourceUrl = URL.createObjectURL(file);
+                this.zoom = 1;
+                this.minZoom = 1;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.open = true;
+                event.target.value = '';
+            },
+
+            imageLoaded() {
+                const img = this.$refs.cropImage;
+                if (!img) return;
+
+                this.naturalWidth = img.naturalWidth || 1;
+                this.naturalHeight = img.naturalHeight || 1;
+
+                const box = this.boxSize();
+                const containScale = Math.min(box / this.naturalWidth, box / this.naturalHeight);
+                const renderedWidth = this.naturalWidth * containScale;
+                const renderedHeight = this.naturalHeight * containScale;
+                this.minZoom = Math.max(1, box / renderedWidth, box / renderedHeight);
+                this.zoom = this.minZoom;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.clampOffset();
+            },
+
+            startDrag(point) {
+                this.dragging = true;
+                this.lastX = point.clientX;
+                this.lastY = point.clientY;
+            },
+
+            drag(point) {
+                if (!this.dragging) return;
+                this.offsetX += point.clientX - this.lastX;
+                this.offsetY += point.clientY - this.lastY;
+                this.lastX = point.clientX;
+                this.lastY = point.clientY;
+                this.clampOffset();
+            },
+
+            stopDrag() {
+                this.dragging = false;
+            },
+
+            cancel() {
+                this.open = false;
+                if (this.sourceUrl) URL.revokeObjectURL(this.sourceUrl);
+                this.sourceUrl = '';
+            },
+
+            applyCrop() {
+                const img = new Image();
+                img.onload = () => {
+                    const box = this.boxSize();
+                    const scale = this.imageScale();
+                    const renderedWidth = this.naturalWidth * scale;
+                    const renderedHeight = this.naturalHeight * scale;
+                    const left = ((box - renderedWidth) / 2) + this.offsetX;
+                    const top = ((box - renderedHeight) / 2) + this.offsetY;
+
+                    const sourceX = Math.max(0, (0 - left) / scale);
+                    const sourceY = Math.max(0, (0 - top) / scale);
+                    const sourceSize = Math.min(
+                        this.naturalWidth - sourceX,
+                        this.naturalHeight - sourceY,
+                        box / scale
+                    );
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 512;
+                    canvas.height = 512;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, 512, 512);
+                    ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, 512, 512);
+
+                    const dataUrl = canvas.toDataURL('image/png', 0.92);
+                    this.previewLogoUrl = dataUrl;
+                    this.$wire.set('croppedHeaderLogoDataUrl', dataUrl);
+                    this.cancel();
+                };
+                img.src = this.sourceUrl;
+            },
+
+            boxSize() {
+                return this.$refs.cropBox ? this.$refs.cropBox.clientWidth : 288;
+            },
+
+            imageScale() {
+                const box = this.boxSize();
+                const containScale = Math.min(box / this.naturalWidth, box / this.naturalHeight);
+                return containScale * this.zoom;
+            },
+
+            clampOffset() {
+                this.zoom = Math.max(this.minZoom, Number(this.zoom || this.minZoom));
+                const box = this.boxSize();
+                const scale = this.imageScale();
+                const renderedWidth = this.naturalWidth * scale;
+                const renderedHeight = this.naturalHeight * scale;
+                const maxX = Math.max(0, (renderedWidth - box) / 2);
+                const maxY = Math.max(0, (renderedHeight - box) / 2);
+                this.offsetX = Math.max(-maxX, Math.min(maxX, this.offsetX));
+                this.offsetY = Math.max(-maxY, Math.min(maxY, this.offsetY));
+            },
+        };
+    };
+</script>

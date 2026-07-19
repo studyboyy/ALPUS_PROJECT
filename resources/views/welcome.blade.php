@@ -155,7 +155,7 @@
                         "Laporan tahunan ini adalah komitmen keterbukaan dan evaluasi berkelanjutan untuk memastikan
                         mutu pendidikan, riset, dan layanan kepada mahasiswa semakin meningkat dari tahun ke tahun."
                     </p>
-                    <p class="mt-4 text-sm font-semibold">Dr. Nama Kepala Prodi</p>
+                    <p class="mt-4 text-sm font-semibold">Nama Kepala Prodi</p>
                 </div>
             </div>
         </section>

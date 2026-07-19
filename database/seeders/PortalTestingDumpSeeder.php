@@ -207,7 +207,7 @@ class PortalTestingDumpSeeder extends Seeder
                 ['label' => 'LinkedIn', 'url' => 'https://linkedin.com/company/george-prodi'],
             ],
             'contact_map_embed_url' => 'https://maps.google.com/maps?q=bandung&t=&z=13&ie=UTF8&iwloc=&output=embed',
-            'kaprodi_name' => 'Drs. George Kurniawan SP.d',
+            'kaprodi_name' => 'George Kurniawan',
             'kaprodi_title' => 'Kepala Program Studi',
             'kaprodi_quote' => 'Data uji ini disusun untuk simulasi portal laporan tahunan agar seluruh fitur dinamis dapat divalidasi end-to-end.',
             'kaprodi_photo_url' => 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=220&q=80',
