@@ -73,8 +73,8 @@
                 {{-- Document cards --}}
                 <div class="space-y-3">
                     @foreach ($items as $document)
-                        <article class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-(--line) bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
-                            <div class="flex min-w-0 items-start gap-4">
+                        <article class="flex items-center gap-4 rounded-xl border border-(--line) bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
+                            <div class="flex min-w-0 flex-1 items-start gap-4">
                                 {{-- File icon --}}
                                 <span class="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -92,8 +92,8 @@
                                     @endif
                                 </div>
                             </div>
-                            <a href="{{ $document->file_url }}" download
-                                class="btn-primary flex-shrink-0 !py-2.5 !px-5 !text-xs">
+                            <a href="{{ route('dokumen.download', $document) }}"
+                                class="btn-primary ml-auto flex-shrink-0 !py-2.5 !px-5 !text-xs">
                                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                 </svg>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DocumentCategoryPdfController;
+use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\LaporanAllYearsPdfController;
 use App\Http\Controllers\LaporanPdfController;
 use App\Http\Controllers\PublicProdiController;
@@ -36,6 +37,7 @@ Route::get('/laporan/pdf-semua', LaporanAllYearsPdfController::class)->name('lap
 Route::get('/statistik', StatistikPage::class)->name('statistik');
 Route::get('/dokumen', DokumenPage::class)->name('dokumen');
 Route::get('/dokumen/pdf/{kategori?}', DocumentCategoryPdfController::class)->name('dokumen.pdf');
+Route::get('/dokumen/unduh/{document}', DocumentDownloadController::class)->name('dokumen.download');
 Route::get('/dokumen/kategori/{kategori}', DokumenPage::class)->name('dokumen.category');
 Route::get('/galeri', GaleriPage::class)->name('galeri');
 Route::get('/galeri/kategori/{kategori}', GaleriPage::class)->name('galeri.category');
