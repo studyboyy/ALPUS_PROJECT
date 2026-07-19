@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login Admin Dashboard</title>
+    <title>Login Portal Kaprodi Jurusan</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -60,7 +60,7 @@
         <section class="glass hidden rounded-3xl p-8 text-white lg:block">
             <p
                 class="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
-                Dashboard Admin</p>
+                Portal Kaprodi Jurusan</p>
             <h1 class="display-font mt-5 text-5xl leading-tight">Kontrol Penuh Data Laporan Tahunan</h1>
             <p class="mt-5 max-w-xl text-sm leading-relaxed text-sky-100">Kelola statistik, grafik, indikator, dan
                 agenda
@@ -69,7 +69,7 @@
             <div class="mt-8 grid gap-3 md:grid-cols-2">
                 <div class="rounded-2xl bg-white/10 p-4">
                     <p class="text-xs uppercase tracking-[0.14em] text-cyan-200">Keamanan</p>
-                    <p class="mt-2 text-sm font-semibold">Akses panel hanya untuk admin terotorisasi.</p>
+                    <p class="mt-2 text-sm font-semibold">Akses panel hanya untuk pengelola jurusan terotorisasi.</p>
                 </div>
                 <div class="rounded-2xl bg-white/10 p-4">
                     <p class="text-xs uppercase tracking-[0.14em] text-amber-200">Efisiensi</p>

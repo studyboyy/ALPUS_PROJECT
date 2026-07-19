@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ isset($title) ? $title . ' — ' : '' }}Admin Panel</title>
+    <title>{{ isset($title) ? $title . ' — ' : '' }}{{ auth()->user()?->role === 'admin' ? 'Admin Panel' : 'Panel Kaprodi' }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -355,7 +355,7 @@
             </div>
             <div class="min-w-0">
                 <p class="adm-brand-name">{{ $adminProdiName }}</p>
-                <p class="adm-brand-sub">Admin Panel</p>
+                <p class="adm-brand-sub">{{ $isCentralAdmin ? 'Admin Panel' : 'Kaprodi' }}</p>
             </div>
         </div>
 
@@ -462,7 +462,7 @@
                     </svg>
                     Lihat Portal
                 </a>
-                <a href="{{ route('laporan.pdf') }}" class="adm-link">
+                <a href="{{ route('laporan.pdf') }}" class="adm-link" target="_blank" rel="noopener">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
@@ -511,7 +511,7 @@
                 <div class="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 shadow-sm">
                     <div class="adm-avatar">{{ $adminInitials }}</div>
                     <div class="hidden text-left sm:block">
-                        <p class="text-xs font-bold text-zinc-800 leading-tight">Admin</p>
+                        <p class="text-xs font-bold text-zinc-800 leading-tight">{{ $isCentralAdmin ? 'Admin' : 'Kaprodi' }}</p>
                         <p class="text-[10px] text-zinc-400 leading-tight">{{ $adminProdiName }}</p>
                     </div>
                 </div>
