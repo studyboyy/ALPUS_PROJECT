@@ -252,15 +252,22 @@ class AdminBerandaContentPage extends Component
 
     public function simpanHeaderPortal(): void
     {
-        if (! auth()->user()?->isAdmin()) {
+        $user = auth()->user();
+        $isAdmin = $user?->isAdmin() === true;
+        $canChangeLogo = $isAdmin || $user?->role === 'kaprodi';
+        if (! $canChangeLogo) {
             return;
         }
 
-        $this->validate([
+        $this->validate($isAdmin ? [
             'headerLogoLabel' => ['required', 'string', 'max:120'],
             'headerTitleText' => ['required', 'string', 'max:180'],
             'croppedHeaderLogoDataUrl' => ['nullable', 'string'],
+        ] : [
+            'croppedHeaderLogoDataUrl' => ['required', 'string'],
         ]);
+
+        $row = $this->getSettingsRow();
 
         if ($this->croppedHeaderLogoDataUrl !== '') {
             $this->headerLogoUrl = $this->storeCroppedHeaderLogo($this->croppedHeaderLogoDataUrl);
@@ -269,12 +276,11 @@ class AdminBerandaContentPage extends Component
             }
         }
 
-        $row = $this->getSettingsRow();
-        $row->fill([
-            'header_logo_url' => $this->headerLogoUrl,
-            'header_logo_label' => $this->headerLogoLabel,
-            'header_title_text' => $this->headerTitleText,
-        ]);
+        $row->header_logo_url = $this->headerLogoUrl;
+        if ($isAdmin) {
+            $row->header_logo_label = $this->headerLogoLabel;
+            $row->header_title_text = $this->headerTitleText;
+        }
         $row->save();
 
         $this->headerLogoFile = null;

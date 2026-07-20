@@ -42,7 +42,7 @@
         <div class="section-box rounded-2xl p-6">
             <h3 class="text-sm font-bold text-zinc-800">Header Portal</h3>
             <p class="mt-1 text-xs text-zinc-500">Teks label di atas logo, judul besar, dan file logo.</p>
-            @if(auth()->user()?->isAdmin())<div class="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs text-indigo-800"><strong>Alur logo:</strong> 1) pilih file, 2) atur crop lalu klik <em>Pakai Logo</em>, 3) klik <em>Simpan Header</em> agar tersimpan ke database.</div>@endif
+            @if(auth()->user()?->isAdmin() || auth()->user()?->role === 'kaprodi')<div class="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs text-indigo-800"><strong>Alur logo:</strong> pilih file, atur crop lalu klik <em>Pakai Logo</em>, kemudian klik <em>Simpan Header</em> agar tersimpan ke database.</div>@endif
 
             <form wire:submit="simpanHeaderPortal"
                 x-data="headerLogoCropper({ initialLogo: @js($headerLogoUrl) })"
@@ -60,9 +60,9 @@
                             @disabled(!auth()->user()?->isAdmin())
                             class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                     </div>
-                    @if(auth()->user()?->isAdmin())
+                    @if(auth()->user()?->isAdmin() || auth()->user()?->role === 'kaprodi')
                     <div class="md:col-span-2">
-                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">1. Pilih Logo</label>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Pilih Logo</label>
                         <input type="file" accept="image/png,image/jpeg,image/webp" @change="selectFile($event)"
                             class="w-full rounded-xl border border-dashed border-indigo-300 bg-indigo-50/40 px-3.5 py-2.5 text-sm text-indigo-700" />
                         <p class="mt-1.5 text-[11px] text-zinc-400">PNG, JPG, atau WebP maksimal 4 MB. Logo akan dicrop persegi 1:1.</p>
@@ -95,7 +95,7 @@
                     </div>
                 </div>
 
-                @if(auth()->user()?->isAdmin())
+                @if(auth()->user()?->isAdmin() || auth()->user()?->role === 'kaprodi')
                 <div x-show="open" x-cloak class="fixed inset-0 z-[9999] grid place-items-center bg-slate-950/75 p-4">
                     <div class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
                         <div class="mb-4 flex items-center justify-between gap-3">
@@ -132,7 +132,7 @@
                                 class="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50">Batal</button>
                             <button type="button" @click="applyCrop()" :disabled="syncing"
                                 class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60">
-                                <span x-text="syncing ? 'Memproses...' : '2. Pakai Logo'"></span>
+                                <span x-text="syncing ? 'Memproses...' : 'Pakai Logo'"></span>
                             </button>
                         </div>
                     </div>
@@ -142,7 +142,7 @@
                     <button type="submit"
                         class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        3. Simpan Header
+                        Simpan Header
                     </button>
                 </div>
                 @endif
@@ -179,10 +179,10 @@
                             <input wire:model="heroImageFiles.{{ $index }}" type="file" accept="image/*"
                                 class="w-full rounded-lg border border-dashed border-indigo-300 bg-indigo-50/40 px-3 py-2 text-xs text-indigo-700"/>
                         </div>
-                        <button type="button" wire:click="hapusHeroItem({{ $index }})"
+                        @if(auth()->user()?->isAdmin())<button type="button" wire:click="hapusHeroItem({{ $index }})"
                             class="flex-shrink-0 rounded-lg bg-rose-50 p-2 text-rose-600 hover:bg-rose-100">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
+                        </button>@endif
                     </div>
                 @endforeach
 
@@ -310,10 +310,10 @@
                                         placeholder="https://instagram.com/prodi"
                                         class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
                                 </div>
-                                <button type="button" wire:click="hapusSocialLink({{ $index }})"
+                                @if(auth()->user()?->isAdmin())<button type="button" wire:click="hapusSocialLink({{ $index }})"
                                     class="rounded-lg bg-rose-50 p-2 text-rose-600 hover:bg-rose-100">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                </button>
+                                </button>@endif
                             </div>
                         @endforeach
                     </div>
@@ -435,8 +435,8 @@
                                     class="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100" title="Naik">↑</button>
                                 <button type="button" wire:click="pindahQuickHighlightKeBawah({{ $index }})"
                                     class="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-100" title="Turun">↓</button>
-                                <button type="button" wire:click="hapusQuickHighlight({{ $index }})"
-                                    class="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100">Hapus</button>
+                                @if(auth()->user()?->isAdmin())<button type="button" wire:click="hapusQuickHighlight({{ $index }})"
+                                    class="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100">Hapus</button>@endif
                             </div>
                         </div>
                         <div class="grid gap-3 md:grid-cols-2">
@@ -594,7 +594,7 @@
                                 </div>
                             </div>
                             {{-- Delete --}}
-                            @if(auth()->user()?->isAdmin() || $index >= $persistedGalleryCount)
+                            @if(auth()->user()?->isAdmin())
                             <button type="button" wire:click="hapusGalleryItem({{ $index }})"
                                 class="flex-shrink-0 self-start rounded-lg bg-rose-50 p-2 text-rose-600 hover:bg-rose-100">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -737,13 +737,17 @@
                     );
 
                     const canvas = document.createElement('canvas');
-                    canvas.width = 512;
-                    canvas.height = 512;
+                    canvas.width = 256;
+                    canvas.height = 256;
                     const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, 512, 512);
-                    ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, 512, 512);
+                    ctx.clearRect(0, 0, 256, 256);
+                    ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, 256, 256);
 
-                    const dataUrl = canvas.toDataURL('image/png', 0.92);
+                    let dataUrl = canvas.toDataURL('image/webp', 0.78);
+                    // Keep the Livewire request below its 1 MB payload limit.
+                    if (dataUrl.length > 900000) {
+                        dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+                    }
                     this.previewLogoUrl = dataUrl;
                     await this.$wire.set('croppedHeaderLogoDataUrl', dataUrl);
                     this.pendingSave = true;
