@@ -568,12 +568,16 @@
             hideT   = setTimeout(() => { el.classList.remove('show'); el.classList.add('hide'); }, 3200);
             removeT = setTimeout(() => el.remove(), 3800);
         };
+        window.showAdminToast = renderToast;
         const init = document.getElementById('admin-toast');
         if (init) renderToast(init.dataset.toastMessage);
+        document.addEventListener('admin-toast', (event) => {
+            renderToast(event.detail?.message || event.detail?.[0]?.message);
+        });
         document.addEventListener('livewire:init', () => {
             Livewire.on('admin-toast', (e) => {
                 const p = Array.isArray(e) ? e[0] : e;
-                renderToast(p?.message);
+                renderToast(p?.message || e?.detail?.message);
             });
         });
     })();

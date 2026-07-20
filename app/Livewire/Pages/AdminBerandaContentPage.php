@@ -232,6 +232,10 @@ class AdminBerandaContentPage extends Component
 
     public function simpanHeaderPortal(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            return;
+        }
+
         $this->validate([
             'headerLogoLabel' => ['required', 'string', 'max:120'],
             'headerTitleText' => ['required', 'string', 'max:180'],

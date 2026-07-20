@@ -50,13 +50,16 @@
                     <div>
                         <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Teks Atas Logo</label>
                         <input wire:model.defer="headerLogoLabel" type="text" placeholder="Program Studi"
+                            @disabled(!auth()->user()?->isAdmin())
                             class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Judul Header (Nama Portal)</label>
                         <input wire:model.defer="headerTitleText" type="text" placeholder="Laporan Tahunan [Nama Prodi]"
+                            @disabled(!auth()->user()?->isAdmin())
                             class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
                     </div>
+                    @if(auth()->user()?->isAdmin())
                     <div class="md:col-span-2">
                         <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Upload Logo</label>
                         <input type="file" accept="image/*" @change="selectFile($event)"
@@ -64,6 +67,7 @@
                         <p class="mt-1.5 text-[11px] text-zinc-400">Logo akan dicrop persegi 1:1 sebelum disimpan.</p>
                         @error('croppedHeaderLogoDataUrl')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                     </div>
+                    @endif
                 </div>
 
                 {{-- Preview --}}
@@ -88,6 +92,7 @@
                     </div>
                 </div>
 
+                @if(auth()->user()?->isAdmin())
                 <div x-show="open" x-cloak class="fixed inset-0 z-[9999] grid place-items-center bg-slate-950/75 p-4">
                     <div class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
                         <div class="mb-4 flex items-center justify-between gap-3">
@@ -135,6 +140,7 @@
                         Simpan Header
                     </button>
                 </div>
+                @endif
             </form>
         </div>
     </div>
