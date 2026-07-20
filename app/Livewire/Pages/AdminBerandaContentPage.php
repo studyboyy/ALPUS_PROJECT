@@ -3,10 +3,12 @@
 namespace App\Livewire\Pages;
 
 use App\Models\HomePageSetting;
+use App\Models\Prodi;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -35,6 +37,8 @@ class AdminBerandaContentPage extends Component
 
     public array $heroItems = [];
     public array $galleryItems = [];
+    #[Locked]
+    public int $persistedGalleryCount = 0;
     public string $galeriKategoriDipilih = 'Semua';
 
     public array $heroImageFiles = [];
@@ -70,14 +74,20 @@ class AdminBerandaContentPage extends Component
 
     public function tambahGalleryItem(): void
     {
+        $category = $this->galeriKategoriDipilih !== 'Semua'
+            ? $this->galeriKategoriDipilih
+            : 'Kegiatan Akademik';
+
         $this->galleryItems[] = [
             'title'           => 'Foto Kegiatan Baru',
             'description'     => '',
-            'category'        => 'Kegiatan Akademik',
+            'category'        => $category,
             'custom_category' => '',
-            'category_slug'   => HomePageSetting::slugFromCategory('Kegiatan Akademik'),
+            'category_slug'   => HomePageSetting::slugFromCategory($category),
             'image_url'       => '',
         ];
+
+        $this->resetValidation();
     }
 
     public function tambahSocialLink(): void
@@ -148,7 +158,7 @@ class AdminBerandaContentPage extends Component
 
     public function hapusGalleryItem(int $index): void
     {
-        if (!auth()->user()?->canDelete()) { return; }
+        if (!auth()->user()?->canDelete() && $index < $this->persistedGalleryCount) { return; }
         if (!isset($this->galleryItems[$index])) {
             return;
         }
@@ -166,6 +176,11 @@ class AdminBerandaContentPage extends Component
 
     public function simpanHero(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengubah hero hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         $this->validate([
             'heroImageFiles.*' => ['nullable', 'image', 'max:4096'],
         ]);
@@ -200,6 +215,11 @@ class AdminBerandaContentPage extends Component
 
     public function simpanKaprodi(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengubah konten kaprodi hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         $this->validate([
             'kaprodiName' => ['required', 'string', 'max:120'],
             'kaprodiTitle' => ['required', 'string', 'max:120'],
@@ -264,6 +284,11 @@ class AdminBerandaContentPage extends Component
 
     public function simpanKontak(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengubah kontak hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         $this->validate([
             'contactEmail'    => ['required', 'email', 'max:120'],
             'contactPhone'    => ['nullable', 'string', 'max:50'],
@@ -333,6 +358,11 @@ class AdminBerandaContentPage extends Component
 
     public function simpanQuickHighlights(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengubah highlight hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         $this->validate([
             'quickHighlights' => ['array', 'max:8'],
             'quickHighlights.*.title' => ['required', 'string', 'max:120'],
@@ -365,6 +395,8 @@ class AdminBerandaContentPage extends Component
 
     public function simpanGaleri(): void
     {
+        $this->resetValidation();
+
         foreach ($this->galleryItems as $index => $item) {
             if ((string) data_get($item, 'category') !== '__new__') {
                 continue;
@@ -409,28 +441,46 @@ class AdminBerandaContentPage extends Component
             $this->galleryItems[$index]['image_url'] = asset('storage/' . $path);
         }
 
-        $this->galleryItems = $this->normalizedItems($this->galleryItems, true)
+        $normalizedItems = $this->normalizedItems($this->galleryItems, true)
             ->filter(fn($item) => data_get($item, 'image_url') !== '')
             ->values()
             ->all();
 
-        if (count($this->galleryItems) === 0) {
+        if (count($normalizedItems) === 0) {
             $this->addError('galleryItems', 'Minimal satu foto galeri wajib tersedia.');
             return;
         }
 
         $row = $this->getSettingsRow();
-        $row->gallery_items = $this->galleryItems;
-        $row->save();
+        if (auth()->user()?->isAdmin()) {
+            $row->gallery_items = $normalizedItems;
+            $row->save();
+        } else {
+            // Data lama selalu dimuat ulang, sehingga kaprodi/sekprodi hanya
+            // dapat menambahkan foto dan tidak dapat mengubah data tersimpan.
+            $newItems = array_slice($normalizedItems, $this->persistedGalleryCount);
+            if ($newItems === []) {
+                $this->addError('galleryItems', 'Tambahkan minimal satu foto baru untuk dipublikasikan.');
+                return;
+            }
+
+            $persistedItems = $this->normalizedItems($row->gallery_items ?? [], true)
+                ->filter(fn($item) => data_get($item, 'image_url') !== '')
+                ->values()
+                ->all();
+            $row->gallery_items = [...$persistedItems, ...$newItems];
+            $row->saveQuietly();
+        }
 
         $this->galleryImageFiles = [];
+        $this->loadSettings();
 
         $this->flashStatus('Galeri beranda berhasil dipublikasikan.');
     }
 
     private function loadSettings(): void
     {
-        $settings = HomePageSetting::current();
+        $settings = HomePageSetting::current($this->activeProdiId());
 
         $this->heroItems = collect($settings['hero_items'] ?? [])
             ->map(fn($item) => [
@@ -475,6 +525,7 @@ class AdminBerandaContentPage extends Component
             ])
             ->values()
             ->all();
+        $this->persistedGalleryCount = count($this->galleryItems);
 
         if (count($this->contactSocialLinks) === 0) {
             $this->contactSocialLinks = HomePageSetting::defaults()['contact_social_links'];
@@ -483,9 +534,35 @@ class AdminBerandaContentPage extends Component
 
     private function getSettingsRow(): HomePageSetting
     {
-        HomePageSetting::ensureDefaults();
+        $prodiId = $this->activeProdiId();
+        $query = HomePageSetting::query()->withoutGlobalScope('prodi');
+        if ($prodiId) {
+            $query->where('prodi_id', $prodiId);
+        }
 
-        return HomePageSetting::query()->first() ?? new HomePageSetting();
+        $row = $query->first();
+        if ($row) {
+            return $row;
+        }
+
+        $row = new HomePageSetting(HomePageSetting::defaults());
+        if ($prodiId) {
+            $row->prodi_id = $prodiId;
+        }
+        $row->saveQuietly();
+
+        return $row;
+    }
+
+    private function activeProdiId(): ?int
+    {
+        $user = auth()->user();
+        if ($user?->isAdmin()) {
+            return (int) (session('admin_prodi_id')
+                ?: Prodi::query()->where('code', '!=', 'ADMIN')->where('is_active', true)->orderBy('name')->value('id'));
+        }
+
+        return $user?->prodi_id ? (int) $user->prodi_id : (session('public_prodi_id') ? (int) session('public_prodi_id') : null);
     }
 
     private function normalizedItems(array $items, bool $withTitle): Collection

@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages;
 
 use App\Models\DocumentItem;
+use App\Models\Prodi;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -26,15 +27,21 @@ class AdminDocumentPage extends Component
 
     public function tambahDokumen(): void
     {
+        $category = $this->kategoriDipilih !== 'Semua'
+            ? $this->kategoriDipilih
+            : 'Dokumen Pendukung';
+
         $this->documents[] = [
             'id' => null,
             'title' => 'Dokumen Baru',
             'description' => '',
-            'category' => 'Dokumen Pendukung',
-            'category_slug' => DocumentItem::slugFromCategory('Dokumen Pendukung'),
+            'category' => $category,
+            'category_slug' => DocumentItem::slugFromCategory($category),
             'file_url' => '',
             'file_name' => '',
         ];
+
+        $this->resetValidation();
     }
 
     public function hapusDokumen(int $index): void
@@ -42,7 +49,7 @@ class AdminDocumentPage extends Component
         if (!auth()->user()?->canDelete()) { $this->flashStatus('Akses hapus hanya untuk Admin.'); return; }
         $documentId = data_get($this->documents, $index . '.id');
         if ($documentId) {
-            DocumentItem::query()->whereKey($documentId)->delete();
+            $this->documentQuery()->whereKey($documentId)->delete();
         }
 
         unset($this->documents[$index], $this->documentFiles[$index]);
@@ -59,6 +66,8 @@ class AdminDocumentPage extends Component
 
     public function simpanDokumen(): void
     {
+        $this->resetValidation();
+
         $this->validate([
             'documents' => ['required', 'array', 'min:1'],
             'documents.*.title' => ['required', 'string', 'max:180'],
@@ -68,6 +77,12 @@ class AdminDocumentPage extends Component
         ]);
 
         foreach ($this->documents as $index => $document) {
+            // Record lama read-only bagi kaprodi/sekprodi, termasuk saat
+            // payload Livewire dimanipulasi dari browser.
+            if (! auth()->user()?->isAdmin() && data_get($document, 'id')) {
+                continue;
+            }
+
             $fileUrl = (string) data_get($document, 'file_url', '');
             $fileName = (string) data_get($document, 'file_name', '');
             $uploadedFile = $this->documentFiles[$index] ?? null;
@@ -83,9 +98,10 @@ class AdminDocumentPage extends Component
                 return;
             }
 
-            $saved = DocumentItem::query()->updateOrCreate(
+            $saved = $this->documentQuery()->updateOrCreate(
                 ['id' => data_get($document, 'id')],
                 [
+                    'prodi_id' => $this->activeProdiId(),
                     'title' => (string) data_get($document, 'title', ''),
                     'description' => (string) data_get($document, 'description', ''),
                     'category' => (string) data_get($document, 'category', 'Dokumen Pendukung'),
@@ -108,10 +124,33 @@ class AdminDocumentPage extends Component
 
     private function loadDocuments(): void
     {
-        $this->documents = DocumentItem::query()
+        $this->documents = $this->documentQuery()
             ->orderBy('sort_order')
             ->get(['id', 'title', 'description', 'category', 'category_slug', 'file_url', 'file_name'])
             ->toArray();
+    }
+
+    private function activeProdiId(): ?int
+    {
+        $user = auth()->user();
+        if ($user?->isAdmin()) {
+            return (int) (session('admin_prodi_id')
+                ?: Prodi::query()->where('code', '!=', 'ADMIN')->where('is_active', true)->orderBy('name')->value('id'));
+        }
+
+        return $user?->prodi_id ? (int) $user->prodi_id : null;
+    }
+
+    private function documentQuery()
+    {
+        $query = DocumentItem::query();
+        $prodiId = $this->activeProdiId();
+
+        if ($prodiId) {
+            $query->withoutGlobalScope('prodi')->where('document_items.prodi_id', $prodiId);
+        }
+
+        return $query;
     }
 
     private function flashStatus(string $message): void

@@ -4,6 +4,7 @@ namespace App\Livewire\Pages;
 
 use App\Models\AnnualReportSection;
 use App\Models\DashboardYearStat;
+use App\Livewire\Concerns\UsesActiveProdi;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -12,6 +13,7 @@ use Livewire\Component;
 #[Title('Admin Laporan Tahunan')]
 class AdminAnnualReportPage extends Component
 {
+    use UsesActiveProdi;
     public int $tahunDipilih = 0;
     public array $sections = [];
 
@@ -24,7 +26,7 @@ class AdminAnnualReportPage extends Component
         DashboardYearStat::ensureDefaults();
         AnnualReportSection::ensureDefaults();
 
-        $tahunTerbaru = DashboardYearStat::query()->max('year');
+        $tahunTerbaru = $this->prodiQuery(DashboardYearStat::class)->max('year');
         if (is_numeric($tahunTerbaru)) {
             $this->tahunDipilih = (int) $tahunTerbaru;
         }
@@ -35,12 +37,17 @@ class AdminAnnualReportPage extends Component
     public function pilihTahun(int $tahun): void
     {
         $this->tahunDipilih = $tahun;
-        AnnualReportSection::ensureYear($tahun);
+        $this->ensureSectionsForYear($tahun);
         $this->loadSections();
     }
 
     public function simpan(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengubah laporan tahunan hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         $this->validate([
             'sections' => ['required', 'array', 'min:1'],
             'sections.*.id' => ['nullable', 'integer'],
@@ -50,9 +57,10 @@ class AdminAnnualReportPage extends Component
         ]);
 
         foreach ($this->sections as $index => $section) {
-            AnnualReportSection::query()->updateOrCreate(
+            $this->prodiQuery(AnnualReportSection::class)->updateOrCreate(
                 ['id' => data_get($section, 'id')],
                 [
+                    'prodi_id' => $this->activeProdiId(),
                     'year' => $this->tahunDipilih,
                     'section_key' => (string) data_get($section, 'section_key'),
                     'title' => (string) data_get($section, 'title'),
@@ -69,7 +77,10 @@ class AdminAnnualReportPage extends Component
 
     private function loadSections(): void
     {
-        $this->sections = AnnualReportSection::forYear($this->tahunDipilih)
+        $this->sections = $this->prodiQuery(AnnualReportSection::class)
+            ->where('year', $this->tahunDipilih)
+            ->orderBy('sort_order')
+            ->get()
             ->map(fn(AnnualReportSection $section) => [
                 'id' => $section->id,
                 'section_key' => $section->section_key,
@@ -78,6 +89,16 @@ class AdminAnnualReportPage extends Component
                 'content' => $section->content,
             ])
             ->all();
+    }
+
+    private function ensureSectionsForYear(int $year): void
+    {
+        foreach (AnnualReportSection::defaultsForYear($year) as $payload) {
+            $this->prodiQuery(AnnualReportSection::class)->firstOrCreate(
+                ['year' => $year, 'section_key' => $payload['section_key']],
+                [...$payload, 'prodi_id' => $this->activeProdiId()],
+            );
+        }
     }
 
     private function flashStatus(string $message): void
@@ -89,7 +110,7 @@ class AdminAnnualReportPage extends Component
     public function render()
     {
         return view('livewire.pages.admin-annual-report-page', [
-            'daftarTahun' => DashboardYearStat::query()->orderByDesc('year')->pluck('year')->all(),
+            'daftarTahun' => $this->prodiQuery(DashboardYearStat::class)->orderByDesc('year')->pluck('year')->all(),
         ]);
     }
 }

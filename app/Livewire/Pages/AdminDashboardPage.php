@@ -53,6 +53,16 @@ class AdminDashboardPage extends Component
         $kpiLatest = $isCentralAdmin
             ? $this->aggregateKpi($latestStats)
             : $this->extractKpi($statTerbaru);
+        $kpiLatest['publikasi'] = $this->publicationRealization($latestStats);
+        $kpiLatest['publikasi_target'] = (float) collect($latestStats)
+            ->sum(fn(DashboardYearStat $stat) => (float) data_get($stat->kpi, '3.value', 0));
+        if ($kpiLatest['publikasi_target'] <= 0) {
+            $kpiLatest['publikasi_target'] = (float) data_get(
+                DashboardYearStat::withoutGlobalScopes()->orderByDesc('year')->first()?->kpi,
+                '3.value',
+                0
+            );
+        }
 
         // ── Tren 5 tahun terakhir (untuk line chart) ──
         $allStats = DashboardYearStat::query()->orderBy('year')->get();
@@ -102,7 +112,7 @@ class AdminDashboardPage extends Component
                         'latest_year' => $latest?->year,
                         'mahasiswa' => (float) data_get($latest?->kpi, '0.value', 0),
                         'ipk' => (float) data_get($latest?->kpi, '1.value', 0),
-                        'publikasi' => (float) data_get($latest?->kpi, '3.value', 0),
+                        'publikasi' => $latest ? $this->publicationRealization(collect([$latest])) : 0,
                     ];
                 })
             : collect();
@@ -124,6 +134,20 @@ class AdminDashboardPage extends Component
             'recentFeedback' => $recentFeedback,
             'prodiSummaries' => $prodiSummaries,
         ]);
+    }
+
+    private function publicationRealization($stats): float
+    {
+        if (! Schema::hasTable('dashboard_monthly_stats')) return 0.0;
+        return (float) collect($stats)->sum(function (DashboardYearStat $stat): float {
+            $rows = DashboardMonthlyStat::withoutGlobalScopes()
+                ->where('prodi_id', $stat->prodi_id)
+                ->where('year', $stat->year)
+                ->get();
+            return $rows->isEmpty()
+                ? (float) data_get($stat->kpi, '3.value', 0)
+                : (float) $rows->sum(fn($row) => (float) data_get($row->kpi, 'publikasi', 0));
+        });
     }
 
     private function buildMiniCharts(array $trendData): array

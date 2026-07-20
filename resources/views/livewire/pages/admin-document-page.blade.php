@@ -45,22 +45,31 @@
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-semibold text-zinc-600">Judul Dokumen</label>
                             <input wire:model.defer="documents.{{ $index }}.title" type="text"
+                                @disabled(!auth()->user()?->isAdmin() && data_get($document, 'id'))
                                 class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                            @error("documents.$index.title")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="mb-1.5 block text-xs font-semibold text-zinc-600">Kategori</label>
                             <input wire:model.defer="documents.{{ $index }}.category" type="text"
+                                @disabled(!auth()->user()?->isAdmin() && data_get($document, 'id'))
                                 class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                            @error("documents.$index.category")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="mb-1.5 block text-xs font-semibold text-zinc-600">Upload File</label>
                             <input wire:model="documentFiles.{{ $index }}" type="file"
+                                @disabled(!auth()->user()?->isAdmin() && data_get($document, 'id'))
                                 class="w-full rounded-xl border border-dashed border-indigo-300 bg-indigo-50/40 px-3.5 py-2.5 text-sm text-indigo-700"/>
+                            <div wire:loading wire:target="documentFiles.{{ $index }}" class="mt-1 text-xs font-medium text-indigo-600">Mengunggah file...</div>
+                            @error("documentFiles.$index")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                         </div>
                         <div class="md:col-span-2">
                             <label class="mb-1.5 block text-xs font-semibold text-zinc-600">Deskripsi</label>
                             <textarea wire:model.defer="documents.{{ $index }}.description" rows="2"
+                                @disabled(!auth()->user()?->isAdmin() && data_get($document, 'id'))
                                 class="w-full resize-none rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"></textarea>
+                            @error("documents.$index.description")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                         </div>
                     </div>
                     {{-- File info + delete --}}

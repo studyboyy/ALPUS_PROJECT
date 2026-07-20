@@ -5,6 +5,7 @@ namespace App\Livewire\Pages;
 use App\Models\DashboardMonthlyStat;
 use App\Models\DashboardYearStat;
 use App\Models\DashboardProgramItem;
+use App\Livewire\Concerns\UsesActiveProdi;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -13,6 +14,7 @@ use Livewire\Component;
 #[Title('Admin Bulanan Statistik')]
 class AdminMonthlyStatsPage extends Component
 {
+    use UsesActiveProdi;
     public int $tahunDipilih = 0;
     public array $bulanan = [];
 
@@ -25,7 +27,7 @@ class AdminMonthlyStatsPage extends Component
         DashboardYearStat::ensureDefaults();
         DashboardProgramItem::ensureDefaults();
 
-        $tahunTerbaru = DashboardYearStat::query()->max('year');
+        $tahunTerbaru = $this->prodiQuery(DashboardYearStat::class)->max('year');
         if (is_numeric($tahunTerbaru)) {
             $this->tahunDipilih = (int) $tahunTerbaru;
         }
@@ -43,13 +45,18 @@ class AdminMonthlyStatsPage extends Component
 
     private function ensureBulananYear(): void
     {
-        $annualKpi = DashboardYearStat::query()->where('year', $this->tahunDipilih)->value('kpi');
-        DashboardMonthlyStat::ensureYear($this->tahunDipilih, is_array($annualKpi) ? $annualKpi : []);
+        $annualKpi = $this->prodiQuery(DashboardYearStat::class)->where('year', $this->tahunDipilih)->value('kpi');
+        for ($month = 1; $month <= 12; $month++) {
+            $this->prodiQuery(DashboardMonthlyStat::class)->firstOrCreate(
+                ['year' => $this->tahunDipilih, 'month' => $month],
+                ['prodi_id' => $this->activeProdiId(), 'kpi' => DashboardMonthlyStat::buildDefaultMonthlyKpi($month, is_array($annualKpi) ? $annualKpi : [])],
+            );
+        }
     }
 
     private function loadBulananForm(): void
     {
-        $rows = DashboardMonthlyStat::query()
+        $rows = $this->prodiQuery(DashboardMonthlyStat::class)
             ->where('year', $this->tahunDipilih)
             ->orderBy('month', 'asc')
             ->get();
@@ -83,6 +90,11 @@ class AdminMonthlyStatsPage extends Component
 
     public function simpanBulanan(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->dispatch('admin-toast', message: 'Mengubah statistik bulanan hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         // Validasi semua baris sekaligus — lebih efisien dari validasi per-baris
         $rules = [];
         foreach (array_keys($this->bulanan) as $index) {
@@ -95,12 +107,13 @@ class AdminMonthlyStatsPage extends Component
         $this->validate($rules);
 
         foreach ($this->bulanan as $row) {
-            DashboardMonthlyStat::query()->updateOrCreate(
+            $this->prodiQuery(DashboardMonthlyStat::class)->updateOrCreate(
                 [
                     'year'  => $this->tahunDipilih,
                     'month' => (int) data_get($row, 'month'),
                 ],
                 [
+                    'prodi_id' => $this->activeProdiId(),
                     'kpi' => [
                         'mahasiswa_aktif' => (float) data_get($row, 'mahasiswa_aktif', 0),
                         'ipk'             => (float) data_get($row, 'ipk', 0),
@@ -117,7 +130,7 @@ class AdminMonthlyStatsPage extends Component
 
     public function render()
     {
-        $years = DashboardYearStat::query()->orderByDesc('year')->pluck('year')->all();
+        $years = $this->prodiQuery(DashboardYearStat::class)->orderByDesc('year')->pluck('year')->all();
         return view('livewire.pages.admin-monthly-stats-page', [
             'daftarTahun'   => $years,
             'tahunDipilih'  => $this->tahunDipilih,

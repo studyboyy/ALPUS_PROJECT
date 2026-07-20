@@ -2,19 +2,24 @@
 
 namespace App\Livewire\Pages;
 
+use App\Livewire\Concerns\UsesActiveProdi;
 use App\Models\DashboardProgramItem;
 use App\Models\DashboardYearStat;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 #[Layout('layouts.admin')]
 #[Title('Admin Program dan Agenda')]
 class AdminProgramAgendaPage extends Component
 {
+    use UsesActiveProdi;
     public int $tahunDipilih = 0;
     public array $programItems = [];
+    #[Locked]
+    public array $newItemIndexes = [];
 
     public function mount(): void
     {
@@ -24,28 +29,29 @@ class AdminProgramAgendaPage extends Component
 
         DashboardYearStat::ensureDefaults();
         DashboardProgramItem::ensureDefaults();
-        $tahunTerbaru = DashboardYearStat::query()->max('year');
+        $tahunTerbaru = $this->prodiQuery(DashboardYearStat::class)->max('year');
         if (is_numeric($tahunTerbaru)) {
             $this->tahunDipilih = (int) $tahunTerbaru;
         }
-        DashboardProgramItem::ensureYear($this->tahunDipilih);
+        $this->ensureProgramYear($this->tahunDipilih);
         $this->loadProgramItems();
     }
 
     public function pilihTahun(int $tahun): void
     {
         $this->tahunDipilih = $tahun;
-        DashboardProgramItem::ensureYear($tahun);
+        $this->ensureProgramYear($tahun);
         $this->loadProgramItems();
     }
 
     public function tambahAgenda(): void
     {
-        $nextSortOrder = (int) DashboardProgramItem::query()
+        $nextSortOrder = (int) $this->prodiQuery(DashboardProgramItem::class)
             ->where('year', $this->tahunDipilih)
             ->max('sort_order') + 1;
 
         $payload = [
+            'prodi_id' => $this->activeProdiId(),
             'year' => $this->tahunDipilih,
             'type' => 'Agenda',
             'title' => 'Agenda Baru Tahun ' . $this->tahunDipilih,
@@ -58,29 +64,29 @@ class AdminProgramAgendaPage extends Component
             $payload['execution_status'] = 'belum_terlaksana';
         }
 
-        DashboardProgramItem::query()->create($payload);
-
-        $this->loadProgramItems();
-        $this->flashStatus('Agenda baru berhasil ditambahkan.');
+        $payload['id'] = null;
+        $this->programItems[] = $payload;
+        $this->newItemIndexes[] = count($this->programItems) - 1;
+        $this->flashStatus('Agenda baru siap diisi. Klik Simpan untuk mempublikasikannya.');
     }
 
     public function hapusAgenda(int $index): void
     {
-        if (!auth()->user()?->canDelete()) { $this->flashStatus('Akses hapus hanya untuk Admin.'); return; }
+        if (!auth()->user()?->canDelete() && data_get($this->programItems, $index . '.id')) { $this->flashStatus('Data lama hanya dapat dihapus oleh Admin.'); return; }
         $itemId = data_get($this->programItems, $index . '.id');
         if (!$itemId) {
             return;
         }
 
-        $totalItems = DashboardProgramItem::query()->where('year', $this->tahunDipilih)->count('id');
+        $totalItems = $this->prodiQuery(DashboardProgramItem::class)->where('year', $this->tahunDipilih)->count('id');
         if ($totalItems <= 1) {
             $this->flashStatus('Minimal satu item program/agenda harus tetap tersedia.');
             return;
         }
 
-        DashboardProgramItem::query()->whereKey($itemId)->delete();
+        $this->prodiQuery(DashboardProgramItem::class)->whereKey($itemId)->delete();
 
-        DashboardProgramItem::query()
+        $this->prodiQuery(DashboardProgramItem::class)
             ->where('year', $this->tahunDipilih)
             ->orderBy('sort_order', 'asc')
             ->get()
@@ -95,12 +101,18 @@ class AdminProgramAgendaPage extends Component
 
     public function simpanProgram(): void
     {
+        $isAdmin = auth()->user()?->isAdmin();
+        if (! $isAdmin && ! collect($this->programItems)->contains(fn($item) => empty($item['id']))) {
+            $this->flashStatus('Kaprodi hanya dapat menyimpan item baru.');
+            return;
+        }
+
         $hasExecutionStatusColumn = $this->hasExecutionStatusColumn();
 
         foreach ($this->programItems as $index => $item) {
             $rules = [
-                "programItems.$index.id" => ['required', 'integer'],
-                "programItems.$index.type" => ['required', 'string'],
+                "programItems.$index.id" => ['nullable', 'integer'],
+                "programItems.$index.type" => ['required', 'in:Program,Agenda'],
                 "programItems.$index.title" => ['required', 'string'],
                 "programItems.$index.description" => ['required', 'string'],
                 "programItems.$index.style_key" => ['required', 'string'],
@@ -125,15 +137,24 @@ class AdminProgramAgendaPage extends Component
                 $payload['execution_status'] = $item['execution_status'] ?? 'belum_terlaksana';
             }
 
-            DashboardProgramItem::query()->whereKey($item['id'])->update($payload);
+            if (!empty($item['id'])) {
+                if ($isAdmin) $this->prodiQuery(DashboardProgramItem::class)->whereKey($item['id'])->update($payload);
+            } else {
+                $this->prodiQuery(DashboardProgramItem::class)->create(['prodi_id' => $this->activeProdiId(), ...$payload]);
+            }
         }
 
         $this->loadProgramItems();
-        $this->flashStatus('Program dan agenda berhasil disimpan.');
+        $this->flashStatus($isAdmin ? 'Program dan agenda berhasil disimpan.' : 'Item baru berhasil disimpan dan kini terkunci.');
     }
 
     public function naikItem(int $index): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengurutkan agenda hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         if ($index <= 0 || $index >= count($this->programItems)) {
             return;
         }
@@ -150,8 +171,8 @@ class AdminProgramAgendaPage extends Component
             return;
         }
 
-        DashboardProgramItem::query()->whereKey($itemId)->update(['sort_order' => $index]);
-        DashboardProgramItem::query()->whereKey($prevItemId)->update(['sort_order' => $index + 1]);
+        $this->prodiQuery(DashboardProgramItem::class)->whereKey($itemId)->update(['sort_order' => $index]);
+        $this->prodiQuery(DashboardProgramItem::class)->whereKey($prevItemId)->update(['sort_order' => $index + 1]);
 
         $this->loadProgramItems();
         $this->flashStatus('Item berhasil dipindahkan ke atas.');
@@ -159,6 +180,11 @@ class AdminProgramAgendaPage extends Component
 
     public function turunItem(int $index): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengurutkan agenda hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         if ($index < 0 || $index >= count($this->programItems) - 1) {
             return;
         }
@@ -175,8 +201,8 @@ class AdminProgramAgendaPage extends Component
             return;
         }
 
-        DashboardProgramItem::query()->whereKey($itemId)->update(['sort_order' => $index + 2]);
-        DashboardProgramItem::query()->whereKey($nextItemId)->update(['sort_order' => $index + 1]);
+        $this->prodiQuery(DashboardProgramItem::class)->whereKey($itemId)->update(['sort_order' => $index + 2]);
+        $this->prodiQuery(DashboardProgramItem::class)->whereKey($nextItemId)->update(['sort_order' => $index + 1]);
 
         $this->loadProgramItems();
         $this->flashStatus('Item berhasil dipindahkan ke bawah.');
@@ -189,7 +215,7 @@ class AdminProgramAgendaPage extends Component
             $columns[] = 'execution_status';
         }
 
-        $this->programItems = DashboardProgramItem::query()
+        $this->programItems = $this->prodiQuery(DashboardProgramItem::class)
             ->where('year', $this->tahunDipilih)
             ->orderBy('sort_order', 'asc')
             ->get($columns)
@@ -210,6 +236,20 @@ class AdminProgramAgendaPage extends Component
             && Schema::hasColumn('dashboard_program_items', 'execution_status');
     }
 
+    private function ensureProgramYear(int $year): void
+    {
+        if ($this->prodiQuery(DashboardProgramItem::class)->where('year', $year)->exists()) {
+            return;
+        }
+
+        foreach (DashboardProgramItem::defaults($year) as $payload) {
+            $this->prodiQuery(DashboardProgramItem::class)->create([
+                ...$payload,
+                'prodi_id' => $this->activeProdiId(),
+            ]);
+        }
+    }
+
     private function flashStatus(string $message): void
     {
         session()->flash('status', $message);
@@ -219,7 +259,7 @@ class AdminProgramAgendaPage extends Component
     public function render()
     {
         return view('livewire.pages.admin-program-agenda-page', [
-            'daftarTahun' => DashboardYearStat::query()->orderByDesc('year')->pluck('year')->all(),
+            'daftarTahun' => $this->prodiQuery(DashboardYearStat::class)->orderByDesc('year')->pluck('year')->all(),
             'styleOptions' => ['blue', 'violet', 'amber', 'rose'],
         ]);
     }

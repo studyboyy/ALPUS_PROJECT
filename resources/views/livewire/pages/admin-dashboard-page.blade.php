@@ -199,7 +199,7 @@
                         ['label'=>'Mahasiswa Aktif','key'=>'mahasiswa','fmt'=>0, 'color'=>'#4f46e5','bg'=>'bg-indigo-50','text'=>'text-indigo-700','chart'=>'mahasiswa'],
                         ['label'=>'IPK Rata-rata',  'key'=>'ipk',      'fmt'=>2, 'color'=>'#0f766e','bg'=>'bg-teal-50',   'text'=>'text-teal-700',  'chart'=>'ipk'],
                         ['label'=>'Dosen Tetap',    'key'=>'dosen',    'fmt'=>0, 'color'=>'#7c3aed','bg'=>'bg-violet-50', 'text'=>'text-violet-700','chart'=>'dosen'],
-                        ['label'=>'Publikasi',      'key'=>'publikasi','fmt'=>0, 'color'=>'#d97706','bg'=>'bg-amber-50',  'text'=>'text-amber-700', 'chart'=>'publikasi'],
+                        ['label'=>'Publikasi (Realisasi)',      'key'=>'publikasi','fmt'=>0, 'color'=>'#d97706','bg'=>'bg-amber-50',  'text'=>'text-amber-700', 'chart'=>'publikasi'],
                     ];
                 @endphp
                 @foreach ($kpiCards as $k)
@@ -215,6 +215,9 @@
                         <p class="mt-2 text-3xl font-extrabold {{ $k['text'] }}">
                             {{ number_format((float)$kpiLatest[$k['key']], $k['fmt'], ',', '.') }}
                         </p>
+                        @if($k['key'] === 'publikasi')
+                            <p class="mt-1 text-[10px] text-zinc-400">Target tahunan: {{ number_format((float)($kpiLatest['publikasi_target'] ?? 0), 0, ',', '.') }}</p>
+                        @endif
                         {{-- Mini line chart --}}
                         <div class="mt-3 -mx-4 -mb-4">
                             <svg viewBox="0 0 344 100" class="h-16 w-full overflow-visible">

@@ -37,7 +37,7 @@
                 ['label'=>'Mahasiswa Aktif','val'=>number_format((float)$statistik['mahasiswa_aktif'],0,',','.'),'color'=>'border-t-blue-500 text-blue-700','note'=>'Tahun '.$tahunDipilih],
                 ['label'=>'IPK Rata-rata',  'val'=>number_format((float)$statistik['ipk'],2,',','.'),           'color'=>'border-t-violet-500 text-violet-700','note'=>'Mutu akademik'],
                 ['label'=>'Dosen Tetap',    'val'=>number_format((float)$statistik['dosen_tetap'],0,',','.'),   'color'=>'border-t-emerald-500 text-emerald-700','note'=>'SDM pengajar'],
-                ['label'=>'Publikasi',      'val'=>number_format((float)$statistik['publikasi'],0,',','.'),     'color'=>'border-t-amber-500 text-amber-700','note'=>'Output riset'],
+                ['label'=>'Target Publikasi',      'val'=>number_format((float)$statistik['publikasi'],0,',','.'),     'color'=>'border-t-amber-500 text-amber-700','note'=>'Target tahunan'],
             ];
         @endphp
         @foreach ($summaryCards as $c)
@@ -85,6 +85,14 @@
                 </span>
             </div>
 
+            @php
+                $canEditAnnual = auth()->user()?->isAdmin() || in_array($tahunDipilih, $tahunBaruBelumDisimpan, true);
+            @endphp
+            @if(!auth()->user()?->isAdmin() && $canEditAnnual)
+                <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">Tahun baru ini dapat diisi satu kali. Setelah disimpan, datanya menjadi terkunci untuk Kaprodi.</div>
+            @elseif(!auth()->user()?->isAdmin())
+                <div class="mb-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">Data tahun yang sudah tersimpan bersifat baca saja. Hubungi Admin untuk perubahan.</div>
+            @endif
             <form wire:submit="simpanStatistik" class="space-y-6">
 
                 {{-- KPI utama --}}
@@ -96,7 +104,7 @@
                                 ['key'=>'mahasiswa_aktif','label'=>'Mahasiswa Aktif','step'=>'1','min'=>'0','max'=>null],
                                 ['key'=>'ipk',           'label'=>'IPK Rata-rata',  'step'=>'0.01','min'=>'0','max'=>'4'],
                                 ['key'=>'dosen_tetap',   'label'=>'Dosen Tetap',    'step'=>'1','min'=>'0','max'=>null],
-                                ['key'=>'publikasi',     'label'=>'Publikasi',      'step'=>'1','min'=>'0','max'=>null],
+                                ['key'=>'publikasi',     'label'=>'Target Publikasi',      'step'=>'1','min'=>'0','max'=>null],
                             ];
                         @endphp
                         @foreach ($kpiFields as $f)
@@ -105,7 +113,8 @@
                                 <input wire:model.defer="statistik.{{ $f['key'] }}"
                                     type="number" step="{{ $f['step'] }}" min="{{ $f['min'] }}"
                                     @if($f['max']) max="{{ $f['max'] }}" @endif
-                                    class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                                    @disabled(!$canEditAnnual)
+                                    class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-zinc-100 disabled:text-zinc-500"/>
                             </div>
                         @endforeach
                     </div>
@@ -129,7 +138,8 @@
                                 <div class="relative">
                                     <input wire:model.defer="statistik.{{ $f['key'] }}"
                                         type="number" step="1" min="0" max="100"
-                                        class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 pr-8 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+                                        @disabled(!$canEditAnnual)
+                                        class="w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 pr-8 text-sm shadow-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:bg-zinc-100 disabled:text-zinc-500"/>
                                     <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400">%</span>
                                 </div>
                             </div>
@@ -138,13 +148,13 @@
                 </div>
 
                 <div class="flex justify-end border-t border-zinc-100 pt-4">
-                    <button type="submit"
+                    @if($canEditAnnual)<button type="submit"
                         class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                         </svg>
                         Simpan Data Tahunan
-                    </button>
+                    </button>@endif
                 </div>
             </form>
         </div>

@@ -42,6 +42,7 @@
         <div class="section-box rounded-2xl p-6">
             <h3 class="text-sm font-bold text-zinc-800">Header Portal</h3>
             <p class="mt-1 text-xs text-zinc-500">Teks label di atas logo, judul besar, dan file logo.</p>
+            @if(auth()->user()?->isAdmin())<div class="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs text-indigo-800"><strong>Alur logo:</strong> 1) pilih file, 2) atur crop lalu klik <em>Pakai Logo</em>, 3) klik <em>Simpan Header</em> agar tersimpan ke database.</div>@endif
 
             <form wire:submit="simpanHeaderPortal"
                 x-data="headerLogoCropper({ initialLogo: @js($headerLogoUrl) })"
@@ -61,11 +62,12 @@
                     </div>
                     @if(auth()->user()?->isAdmin())
                     <div class="md:col-span-2">
-                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Upload Logo</label>
+                        <label class="block text-xs font-semibold text-zinc-600 mb-1.5">1. Pilih Logo</label>
                         <input type="file" accept="image/png,image/jpeg,image/webp" @change="selectFile($event)"
                             class="w-full rounded-xl border border-dashed border-indigo-300 bg-indigo-50/40 px-3.5 py-2.5 text-sm text-indigo-700" />
                         <p class="mt-1.5 text-[11px] text-zinc-400">PNG, JPG, atau WebP maksimal 4 MB. Logo akan dicrop persegi 1:1.</p>
                         <p x-show="cropError" x-text="cropError" class="mt-1 text-xs font-semibold text-rose-600"></p>
+                        <p x-show="pendingSave" class="mt-1 text-xs font-semibold text-emerald-700">Logo siap digunakan. Klik “Simpan Header”.</p>
                         @error('croppedHeaderLogoDataUrl')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                     </div>
                     @endif
@@ -130,7 +132,7 @@
                                 class="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50">Batal</button>
                             <button type="button" @click="applyCrop()" :disabled="syncing"
                                 class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60">
-                                <span x-text="syncing ? 'Memproses...' : 'Pakai Logo'"></span>
+                                <span x-text="syncing ? 'Memproses...' : '2. Pakai Logo'"></span>
                             </button>
                         </div>
                     </div>
@@ -140,7 +142,7 @@
                     <button type="submit"
                         class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        Simpan Header
+                        3. Simpan Header
                     </button>
                 </div>
                 @endif
@@ -552,11 +554,14 @@
                                 <div>
                                     <label class="block text-xs font-medium text-zinc-500 mb-1">Judul</label>
                                     <input wire:model.defer="galleryItems.{{ $index }}.title" type="text"
+                                        @disabled(!auth()->user()?->isAdmin() && $index < $persistedGalleryCount)
                                         class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"/>
+                                    @error("galleryItems.$index.title")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-zinc-500 mb-1">Kategori</label>
-                                    <select wire:model.defer="galleryItems.{{ $index }}.category"
+                                    <select wire:model.live="galleryItems.{{ $index }}.category"
+                                        @disabled(!auth()->user()?->isAdmin() && $index < $persistedGalleryCount)
                                         class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100">
                                         @foreach ($adminGalleryKategori as $ko)
                                             <option value="{{ $ko }}">{{ $ko }}</option>
@@ -575,20 +580,26 @@
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-zinc-500 mb-1">Deskripsi <span class="text-zinc-400">(tampil di modal)</span></label>
                                     <textarea wire:model.defer="galleryItems.{{ $index }}.description" rows="2"
+                                        @disabled(!auth()->user()?->isAdmin() && $index < $persistedGalleryCount)
                                         placeholder="Keterangan singkat tentang foto ini..."
                                         class="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100"></textarea>
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-zinc-500 mb-1">Ganti Gambar</label>
                                     <input wire:model="galleryImageFiles.{{ $index }}" type="file" accept="image/*"
+                                        @disabled(!auth()->user()?->isAdmin() && $index < $persistedGalleryCount)
                                         class="w-full rounded-lg border border-dashed border-indigo-300 bg-indigo-50/40 px-3 py-2 text-xs text-indigo-700"/>
+                                    <div wire:loading wire:target="galleryImageFiles.{{ $index }}" class="mt-1 text-xs font-medium text-indigo-600">Mengunggah gambar...</div>
+                                    @error("galleryImageFiles.$index")<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                                 </div>
                             </div>
                             {{-- Delete --}}
+                            @if(auth()->user()?->isAdmin() || $index >= $persistedGalleryCount)
                             <button type="button" wire:click="hapusGalleryItem({{ $index }})"
                                 class="flex-shrink-0 self-start rounded-lg bg-rose-50 p-2 text-rose-600 hover:bg-rose-100">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
+                            @endif
                         </div>
                     </div>
                 @endforeach
@@ -606,6 +617,7 @@
                         Publikasikan Galeri
                     </button>
                 </div>
+                @error('galleryItems')<p class="text-sm font-medium text-rose-600">{{ $message }}</p>@enderror
             </form>
         </div>
     </div>
@@ -629,6 +641,7 @@
             naturalHeight: 0,
             syncing: false,
             cropError: '',
+            pendingSave: false,
 
             selectFile(event) {
                 const file = event.target.files && event.target.files[0];
@@ -733,6 +746,7 @@
                     const dataUrl = canvas.toDataURL('image/png', 0.92);
                     this.previewLogoUrl = dataUrl;
                     await this.$wire.set('croppedHeaderLogoDataUrl', dataUrl);
+                    this.pendingSave = true;
                     this.cancel();
                     } catch (error) {
                         this.cropError = 'Logo gagal diproses. Silakan coba gambar lain.';

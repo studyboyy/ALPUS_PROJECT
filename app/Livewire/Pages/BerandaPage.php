@@ -130,7 +130,7 @@ class BerandaPage extends Component
         session()->flash('contact_status', 'Terima kasih. Umpan balik Anda sudah terkirim.');
     }
 
-    private function formatStatistikAktif(DashboardYearStat $stat, ?array $trendOverride = null): array
+    private function formatStatistikAktif(DashboardYearStat $stat, ?array $trendOverride = null, ?float $publicationRealization = null): array
     {
         $kpi = collect($stat->kpi)
             ->values()
@@ -149,6 +149,12 @@ class BerandaPage extends Component
                 ];
             })
             ->all();
+
+        if (isset($kpi[3]) && $publicationRealization !== null) {
+            $kpi[3]['label'] = 'Publikasi (Realisasi YTD)';
+            $kpi[3]['countTarget'] = $publicationRealization;
+            $kpi[3]['value'] = number_format($publicationRealization, $kpi[3]['decimals'], ',', '.');
+        }
 
         $capaian = collect($stat->capaian)
             ->values()
@@ -769,7 +775,7 @@ class BerandaPage extends Component
 
             return view('livewire.pages.beranda-page', [
                 'daftarTahun' => $years,
-                'statistikAktif' => $this->formatStatistikAktif($fallbackStat),
+                'statistikAktif' => $this->formatStatistikAktif($fallbackStat, null, $this->publicationRealization($fallbackStat)),
                 'programAgendaItems' => $fallbackPrograms,
                 'homeContent' => $homeContent,
                 'profileSections' => $profileSections,
@@ -819,7 +825,7 @@ class BerandaPage extends Component
 
         return view('livewire.pages.beranda-page', [
             'daftarTahun'          => $allStats->pluck('year')->all(),
-            'statistikAktif'       => $this->formatStatistikAktif($statistikAktif, $trendData),
+            'statistikAktif'       => $this->formatStatistikAktif($statistikAktif, $trendData, $this->publicationRealization($statistikAktif)),
             'chartJsData'          => $chartJsData,
             'programAgendaItems'   => $programAgendaItems,
             'homeContent'          => $homeContent,
@@ -827,5 +833,12 @@ class BerandaPage extends Component
             'mitraDanKegiatanStats' => $mitraDanKegiatanStats,
             'kinerjaTahunanBerjalan' => $kinerjaTahunanBerjalan,
         ]);
+    }
+
+    private function publicationRealization(?DashboardYearStat $stat): float
+    {
+        if (! $stat || ! Schema::hasTable('dashboard_monthly_stats')) return 0.0;
+        return (float) DashboardMonthlyStat::query()->where('year', $stat->year)->get()
+            ->sum(fn($row) => (float) data_get($row->kpi, 'publikasi', 0));
     }
 }

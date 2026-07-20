@@ -190,14 +190,18 @@ class HomePageSetting extends Model
         static::query()->create(static::defaults());
     }
 
-    public static function current(): array
+    public static function current(?int $prodiId = null): array
     {
         if (!Schema::hasTable('home_page_settings')) {
             return static::defaults();
         }
 
-        static::ensureDefaults();
-        $row = static::query()->first();
+        if ($prodiId) {
+            $row = static::query()->withoutGlobalScope('prodi')->where('prodi_id', $prodiId)->first();
+        } else {
+            static::ensureDefaults();
+            $row = static::query()->first();
+        }
 
         if (!$row) {
             return static::defaults();

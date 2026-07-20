@@ -89,7 +89,7 @@
                 @foreach ($laporanAktif?->kpi ?? [] as $ki => $item)
                     @php $kc = $kpiColors[$ki] ?? $kpiColors[0]; @endphp
                     <div class="rounded-xl border {{ $kc['border'] }} {{ $kc['bg'] }} p-4">
-                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ data_get($item, 'label') }}</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ $ki === 3 ? 'Target Publikasi' : data_get($item, 'label') }}</p>
                         <p class="mt-2 text-2xl font-extrabold {{ $kc['val'] }}">
                             {{ number_format((float) data_get($item,'value',0),(int) data_get($item,'decimals',0),',','.') }}
                         </p>
@@ -151,7 +151,7 @@
                         <tbody class="divide-y divide-(--line)">
                             @foreach ($laporanAktif?->kpi ?? [] as $item)
                                 <tr class="hover:bg-slate-50 transition-colors">
-                                    <td class="px-4 py-3 text-slate-700">{{ data_get($item,'label') }}</td>
+                                    <td class="px-4 py-3 text-slate-700">{{ $loop->index === 3 ? 'Target Publikasi' : data_get($item,'label') }}</td>
                                     <td class="px-4 py-3 text-right font-bold text-slate-800">
                                         {{ number_format((float) data_get($item,'value',0),(int) data_get($item,'decimals',0),',','.') }}
                                     </td>

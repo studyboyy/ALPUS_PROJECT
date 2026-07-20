@@ -40,7 +40,7 @@
             @foreach ($statAktif?->kpi ?? [] as $ki => $item)
                 @php $kc = $kpiColors[$ki] ?? $kpiColors[0]; @endphp
                 <div class="rounded-xl border {{ $kc['border'] }} {{ $kc['bg'] }} p-4">
-                    <p class="text-xs font-medium text-slate-500">{{ data_get($item,'label') }}</p>
+                        <p class="text-xs font-medium text-slate-500">{{ $ki === 3 ? 'Target Publikasi' : data_get($item,'label') }}</p>
                     <p class="mt-1.5 text-2xl font-extrabold {{ $kc['val'] }}">
                         {{ number_format((float) data_get($item,'value',0), (int) data_get($item,'decimals',0), ',', '.') }}
                     </p>
@@ -195,7 +195,7 @@
                 $quickItems = [
                     ['label'=>'Mahasiswa Aktif',    'value'=>number_format((float)data_get($statAktif?->kpi,'0.value',0),0,',','.'),'color'=>'text-blue-700','bg'=>'bg-blue-50','border'=>'border-blue-100'],
                     ['label'=>'Lulusan & Tracer',   'value'=>number_format((float)data_get($statAktif?->capaian,'1.percent',0),0,',','.').'%','color'=>'text-violet-700','bg'=>'bg-violet-50','border'=>'border-violet-100'],
-                    ['label'=>'Publikasi Ilmiah',   'value'=>number_format((float)data_get($statAktif?->kpi,'3.value',0),0,',','.'),'color'=>'text-emerald-700','bg'=>'bg-emerald-50','border'=>'border-emerald-100'],
+                    ['label'=>'Publikasi (Realisasi YTD)',   'value'=>number_format((float) data_get(collect($kinerjaTahunanBerjalan)->first(fn($row) => str_contains((string) data_get($row,'label'), 'Publikasi')), 'value', 0),0,',','.'),'color'=>'text-emerald-700','bg'=>'bg-emerald-50','border'=>'border-emerald-100'],
                     ['label'=>'Kegiatan Dosen&Mhs', 'value'=>number_format((float)data_get($statAktif?->capaian,'3.percent',0),0,',','.').'%','color'=>'text-amber-700','bg'=>'bg-amber-50','border'=>'border-amber-100'],
                     ['label'=>'Program Aktif',      'value'=>$programCount,'color'=>'text-rose-700','bg'=>'bg-rose-50','border'=>'border-rose-100'],
                 ];

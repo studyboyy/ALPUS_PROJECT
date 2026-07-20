@@ -171,7 +171,7 @@ class DashboardMonthlyStat extends Model
         ];
     }
 
-    private static function buildDefaultMonthlyKpi(int $month, array $annualKpi): array
+    public static function buildDefaultMonthlyKpi(int $month, array $annualKpi): array
     {
         $targetMahasiswa = (float) data_get($annualKpi, '0.value', 0);
         $targetIpk       = (float) data_get($annualKpi, '1.value', 0);

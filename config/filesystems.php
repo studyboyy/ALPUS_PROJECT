@@ -40,7 +40,10 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            // public/storage pada project ini adalah direktori publik biasa,
+            // bukan symbolic link. Simpan upload langsung ke lokasi yang
+            // dilayani web server agar file galeri dan dokumen dapat dibuka.
+            'root' => public_path('storage'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
@@ -73,8 +76,8 @@ return [
     |
     */
 
-    'links' => [
-        public_path('storage') => storage_path('app/public'),
-    ],
+    // The public disk is already rooted at public/storage; no symbolic link
+    // is required (and an existing directory must not be replaced by one).
+    'links' => [],
 
 ];

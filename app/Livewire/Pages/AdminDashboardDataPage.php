@@ -2,10 +2,14 @@
 
 namespace App\Livewire\Pages;
 
+use App\Models\AnnualReportSection;
 use App\Models\DashboardMonthlyStat;
 use App\Models\DashboardProgramItem;
 use App\Models\DashboardYearStat;
+use App\Models\Prodi;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -15,6 +19,8 @@ class AdminDashboardDataPage extends Component
 {
     public int $tahunDipilih = 0;
     public ?int $tahunBaru = null;
+    #[Locked]
+    public array $tahunBaruBelumDisimpan = [];
 
     // ── Tab ──
     public string $activeTab = 'tahunan';
@@ -43,7 +49,7 @@ class AdminDashboardDataPage extends Component
         DashboardYearStat::ensureDefaults();
         DashboardProgramItem::ensureDefaults();
 
-        $tahunTerbaru = DashboardYearStat::query()->max('year');
+        $tahunTerbaru = $this->yearStatQuery()->max('year');
         if (is_numeric($tahunTerbaru)) {
             $this->tahunDipilih = (int) $tahunTerbaru;
         }
@@ -77,9 +83,12 @@ class AdminDashboardDataPage extends Component
             'tahunBaru' => ['required', 'integer', 'min:2000', 'max:2100'],
         ]);
 
-        DashboardYearStat::query()->firstOrCreate(
-            ['year' => (int) $this->tahunBaru],
+        $tahun = (int) $this->tahunBaru;
+        $sudahAda = $this->yearStatQuery()->where('year', $tahun)->exists();
+        $this->yearStatQuery()->firstOrCreate(
+            ['year' => $tahun],
             [
+                'prodi_id' => $this->activeProdiId(),
                 'kpi' => [
                     ['label' => 'Mahasiswa Aktif', 'value' => 0, 'decimals' => 0],
                     ['label' => 'IPK Rata-rata',   'value' => 0, 'decimals' => 2],
@@ -99,7 +108,10 @@ class AdminDashboardDataPage extends Component
             ]
         );
 
-        $this->tahunDipilih = (int) $this->tahunBaru;
+        if (! auth()->user()?->isAdmin() && ! $sudahAda) {
+            $this->tahunBaruBelumDisimpan[] = $tahun;
+        }
+        $this->tahunDipilih = $tahun;
         $this->tahunBaru = null;
         $this->loadStatistikForm();
         $this->loadBulananForm();
@@ -109,13 +121,24 @@ class AdminDashboardDataPage extends Component
     public function hapusTahun(int $tahun): void
     {
         if (!auth()->user()?->canDelete()) { $this->flashStatus('Akses hapus hanya untuk Admin.'); return; }
-        if (DashboardYearStat::query()->count() <= 1) {
+        if ($this->yearStatQuery()->count() <= 1) {
             $this->flashStatus('Minimal satu tahun statistik harus tetap tersedia.');
             return;
         }
 
-        DashboardYearStat::query()->where('year', $tahun)->delete();
-        $tahunTerbaru = DashboardYearStat::query()->max('year');
+        DB::transaction(function () use ($tahun): void {
+            $this->monthlyQuery()->where('year', $tahun)->delete();
+            DashboardProgramItem::withoutGlobalScopes()
+                ->where('prodi_id', $this->activeProdiId())
+                ->where('year', $tahun)
+                ->delete();
+            AnnualReportSection::withoutGlobalScopes()
+                ->where('prodi_id', $this->activeProdiId())
+                ->where('year', $tahun)
+                ->delete();
+            $this->yearStatQuery()->where('year', $tahun)->delete();
+        });
+        $tahunTerbaru = $this->yearStatQuery()->max('year');
         $this->tahunDipilih = is_numeric($tahunTerbaru) ? (int) $tahunTerbaru : $this->tahunDipilih;
         $this->loadStatistikForm();
         $this->loadBulananForm();
@@ -128,6 +151,13 @@ class AdminDashboardDataPage extends Component
 
     public function simpanStatistik(): void
     {
+        $bolehSimpan = auth()->user()?->isAdmin()
+            || in_array($this->tahunDipilih, $this->tahunBaruBelumDisimpan, true);
+        if (! $bolehSimpan) {
+            $this->flashStatus('Mengubah statistik tahunan hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         $this->validate([
             'statistik.mahasiswa_aktif' => ['required', 'numeric', 'min:0'],
             'statistik.ipk'             => ['required', 'numeric', 'between:0,4'],
@@ -139,9 +169,10 @@ class AdminDashboardDataPage extends Component
             'statistik.capaian_kegiatan'  => ['required', 'numeric', 'between:0,100'],
         ]);
 
-        DashboardYearStat::query()->updateOrCreate(
+        $this->yearStatQuery()->updateOrCreate(
             ['year' => $this->tahunDipilih],
             [
+                'prodi_id' => $this->activeProdiId(),
                 'kpi' => [
                     ['label' => 'Mahasiswa Aktif', 'value' => (float) $this->statistik['mahasiswa_aktif'], 'decimals' => 0],
                     ['label' => 'IPK Rata-rata',   'value' => (float) $this->statistik['ipk'],             'decimals' => 2],
@@ -158,6 +189,7 @@ class AdminDashboardDataPage extends Component
         );
 
         $this->rebuildTrendFromKpi();
+        $this->tahunBaruBelumDisimpan = array_values(array_diff($this->tahunBaruBelumDisimpan, [$this->tahunDipilih]));
         $this->loadStatistikForm();
         $this->flashStatus('Data statistik tahun ' . $this->tahunDipilih . ' berhasil disimpan.');
     }
@@ -168,10 +200,10 @@ class AdminDashboardDataPage extends Component
 
     private function loadBulananForm(): void
     {
-        $annualKpi = DashboardYearStat::query()->where('year', $this->tahunDipilih)->value('kpi');
-        DashboardMonthlyStat::ensureYear($this->tahunDipilih, is_array($annualKpi) ? $annualKpi : []);
+        $annualKpi = $this->yearStatQuery()->where('year', $this->tahunDipilih)->value('kpi');
+        $this->ensureMonthlyYear($this->tahunDipilih, is_array($annualKpi) ? $annualKpi : []);
 
-        $rows = DashboardMonthlyStat::query()
+        $rows = $this->monthlyQuery()
             ->where('year', $this->tahunDipilih)
             ->orderBy('month')
             ->get();
@@ -202,6 +234,11 @@ class AdminDashboardDataPage extends Component
 
     public function simpanBulanan(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengubah statistik bulanan hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         $rules = [];
         foreach (array_keys($this->bulanan) as $index) {
             $rules["bulanan.$index.month"]           = ['required', 'integer', 'between:1,12'];
@@ -213,9 +250,10 @@ class AdminDashboardDataPage extends Component
         $this->validate($rules);
 
         foreach ($this->bulanan as $row) {
-            DashboardMonthlyStat::query()->updateOrCreate(
+            $this->monthlyQuery()->updateOrCreate(
                 ['year' => $this->tahunDipilih, 'month' => (int) data_get($row, 'month')],
                 [
+                    'prodi_id' => $this->activeProdiId(),
                     'kpi' => [
                         'mahasiswa_aktif' => (float) data_get($row, 'mahasiswa_aktif', 0),
                         'ipk'             => (float) data_get($row, 'ipk', 0),
@@ -236,7 +274,7 @@ class AdminDashboardDataPage extends Component
 
     private function loadStatistikForm(): void
     {
-        $stat = DashboardYearStat::query()->where('year', $this->tahunDipilih)->first();
+        $stat = $this->yearStatQuery()->where('year', $this->tahunDipilih)->first();
         if (!$stat) {
             $this->statistik = [
                 'mahasiswa_aktif'   => 0, 'ipk' => 0, 'dosen_tetap' => 0, 'publikasi' => 0,
@@ -259,7 +297,7 @@ class AdminDashboardDataPage extends Component
 
     private function rebuildTrendFromKpi(): void
     {
-        $allStats = DashboardYearStat::query()->orderBy('year')->get(['id', 'year', 'kpi', 'trend']);
+        $allStats = $this->yearStatQuery()->orderBy('year')->get(['id', 'year', 'kpi', 'trend']);
 
         foreach ($allStats as $index => $stat) {
             $window = $allStats->slice(max(0, $index - 4), min(5, $index + 1));
@@ -269,7 +307,7 @@ class AdminDashboardDataPage extends Component
             [$dPoly, $dLastY] = $this->buildPolyline($window->map(fn($r) => (float) data_get($r->kpi, '2.value', 0))->values()->all());
             [$pPoly, $pLastY] = $this->buildPolyline($window->map(fn($r) => (float) data_get($r->kpi, '3.value', 0))->values()->all());
 
-            DashboardYearStat::query()->whereKey(data_get($stat, 'id'))->update([
+            $this->yearStatQuery()->whereKey(data_get($stat, 'id'))->update([
                 'trend' => [
                     'mahasiswa' => $mPoly, 'ipk' => $iPoly, 'dosen' => $dPoly, 'publikasi' => $pPoly,
                     'mahasiswaLastY' => $mLastY, 'ipkLastY' => $iLastY, 'dosenLastY' => $dLastY, 'publikasiLastY' => $pLastY,
@@ -307,10 +345,58 @@ class AdminDashboardDataPage extends Component
         $this->dispatch('admin-toast', message: $message);
     }
 
+    private function activeProdiId(): ?int
+    {
+        $user = auth()->user();
+        if ($user?->isAdmin()) {
+            return (int) (session('admin_prodi_id')
+                ?: Prodi::query()->where('code', '!=', 'ADMIN')->where('is_active', true)->orderBy('name')->value('id'));
+        }
+
+        return $user?->prodi_id ? (int) $user->prodi_id : null;
+    }
+
+    private function yearStatQuery()
+    {
+        $query = DashboardYearStat::query();
+        $prodiId = $this->activeProdiId();
+
+        if ($prodiId) {
+            $query->withoutGlobalScope('prodi')->where('dashboard_year_stats.prodi_id', $prodiId);
+        }
+
+        return $query;
+    }
+
+    private function monthlyQuery()
+    {
+        $query = DashboardMonthlyStat::query();
+        $prodiId = $this->activeProdiId();
+
+        if ($prodiId) {
+            $query->withoutGlobalScope('prodi')->where('dashboard_monthly_stats.prodi_id', $prodiId);
+        }
+
+        return $query;
+    }
+
+    private function ensureMonthlyYear(int $year, array $annualKpi): void
+    {
+        for ($month = 1; $month <= 12; $month++) {
+            $this->monthlyQuery()->firstOrCreate(
+                ['year' => $year, 'month' => $month],
+                [
+                    'prodi_id' => $this->activeProdiId(),
+                    'kpi' => DashboardMonthlyStat::buildDefaultMonthlyKpi($month, $annualKpi),
+                ],
+            );
+        }
+    }
+
     public function render()
     {
         return view('livewire.pages.admin-dashboard-data-page', [
-            'daftarTahun'  => DashboardYearStat::query()->orderByDesc('year')->pluck('year')->all(),
+            'daftarTahun'  => $this->yearStatQuery()->orderByDesc('year')->pluck('year')->all(),
             'bulanSekarang' => (int) now()->format('n'),
         ]);
     }

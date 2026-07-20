@@ -85,6 +85,11 @@ class AdminProfilePage extends Component
 
     public function simpanSection(): void
     {
+        if (! auth()->user()?->isAdmin()) {
+            $this->flashStatus('Mengubah profil hanya dapat dilakukan oleh Admin.');
+            return;
+        }
+
         $this->validate([
             'editTitle' => ['required', 'string', 'max:120'],
             'editSummary' => ['required', 'string', 'max:255'],
