@@ -102,6 +102,28 @@ test('kaprodi can append gallery and document but cannot change existing records
         ->and(DocumentItem::withoutGlobalScopes()->where('prodi_id', $prodi->id)->count())->toBeGreaterThan(1);
 });
 
+test('kaprodi can replace only the header logo', function () {
+    $kaprodi = User::query()->where('role', 'kaprodi')->whereHas('prodi', fn ($q) => $q->where('code', 'SI'))->firstOrFail();
+    $prodi = $kaprodi->prodi;
+    $settings = HomePageSetting::withoutGlobalScopes()->where('prodi_id', $prodi->id)->firstOrFail();
+    $oldLabel = $settings->header_logo_label;
+    $oldTitle = $settings->header_title_text;
+    session()->put(['admin_prodi_id' => $prodi->id, 'public_prodi_id' => $prodi->id]);
+
+    $dataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    Livewire::actingAs($kaprodi)
+        ->test(AdminBerandaContentPage::class)
+        ->set('croppedHeaderLogoDataUrl', $dataUrl)
+        ->set('headerLogoLabel', 'Tidak Boleh Diubah')
+        ->call('simpanHeaderPortal')
+        ->assertHasNoErrors();
+
+    $saved = HomePageSetting::withoutGlobalScopes()->where('prodi_id', $prodi->id)->firstOrFail();
+    expect($saved->header_logo_url)->toContain('/storage/home-content/header/logo-')
+        ->and($saved->header_logo_label)->toBe($oldLabel)
+        ->and($saved->header_title_text)->toBe($oldTitle);
+});
+
 test('kaprodi cannot update existing statistics or agenda through livewire actions', function () {
     $kaprodi = User::query()->where('role', 'kaprodi')->whereHas('prodi', fn ($q) => $q->where('code', 'SI'))->firstOrFail();
     $prodi = $kaprodi->prodi;

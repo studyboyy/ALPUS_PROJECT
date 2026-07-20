@@ -7,6 +7,7 @@ use App\Models\Prodi;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
+use Throwable;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
@@ -619,9 +620,14 @@ class AdminBerandaContentPage extends Component
         }
 
         $path = 'home-content/header/logo-'.Str::uuid().'.'.$extension;
-        if (! Storage::disk('public')->put($path, $binary)) {
-            $this->addError('croppedHeaderLogoDataUrl', 'Logo gagal disimpan ke penyimpanan aplikasi.');
-
+        try {
+            if (! Storage::disk('public')->put($path, $binary)) {
+                throw new \RuntimeException('Storage menolak file logo.');
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->addError('croppedHeaderLogoDataUrl', 'Logo gagal disimpan. Periksa folder storage atau coba foto lain.');
+            $this->flashStatus('Logo gagal disimpan.');
             return $this->headerLogoUrl;
         }
 

@@ -124,7 +124,7 @@
                         </div>
 
                         <label class="mt-4 block text-xs font-semibold text-zinc-600">Zoom</label>
-                        <input type="range" :min="minZoom" max="3" step="0.01" x-model.number="zoom" @input="clampOffset()"
+                        <input type="range" :min="Math.min(minZoom, 3)" max="3" step="0.01" x-model.number="zoom" :disabled="!open || syncing" @input="clampOffset()"
                             class="mt-2 w-full accent-indigo-600">
 
                         <div class="mt-5 flex justify-end gap-2">
@@ -135,6 +135,7 @@
                                 <span x-text="syncing ? 'Memproses...' : 'Pakai Logo'"></span>
                             </button>
                         </div>
+                        <p x-show="cropError" x-text="cropError" class="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"></p>
                     </div>
                 </div>
 
@@ -648,9 +649,9 @@
                 if (!file) return;
 
                 this.cropError = '';
-                const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
-                if (!allowedTypes.includes(file.type)) {
-                    this.cropError = 'Format logo harus PNG, JPG, atau WebP.';
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+                if (!allowedTypes.includes(file.type) && !file.type.startsWith('image/')) {
+                    this.cropError = 'File harus berupa gambar PNG, JPG, JPEG, atau WebP.';
                     event.target.value = '';
                     return;
                 }
@@ -682,7 +683,7 @@
                 const containScale = Math.min(box / this.naturalWidth, box / this.naturalHeight);
                 const renderedWidth = this.naturalWidth * containScale;
                 const renderedHeight = this.naturalHeight * containScale;
-                this.minZoom = Math.max(1, box / renderedWidth, box / renderedHeight);
+                this.minZoom = Math.min(3, Math.max(1, box / renderedWidth, box / renderedHeight));
                 this.zoom = this.minZoom;
                 this.offsetX = 0;
                 this.offsetY = 0;
@@ -715,7 +716,11 @@
             },
 
             applyCrop() {
-                if (this.syncing || !this.sourceUrl || !this.naturalWidth || !this.naturalHeight) return;
+                if (this.syncing) return;
+                if (!this.sourceUrl || !this.naturalWidth || !this.naturalHeight) {
+                    this.cropError = 'Gambar belum siap diproses. Tunggu preview selesai lalu coba lagi.';
+                    return;
+                }
                 const img = new Image();
                 img.onload = async () => {
                     this.syncing = true;
@@ -748,12 +753,15 @@
                     if (dataUrl.length > 900000) {
                         dataUrl = canvas.toDataURL('image/jpeg', 0.65);
                     }
+                    if (!dataUrl || dataUrl.length > 1000000) {
+                        throw new Error('Ukuran hasil crop masih terlalu besar.');
+                    }
                     this.previewLogoUrl = dataUrl;
                     await this.$wire.set('croppedHeaderLogoDataUrl', dataUrl);
                     this.pendingSave = true;
                     this.cancel();
                     } catch (error) {
-                        this.cropError = 'Logo gagal diproses. Silakan coba gambar lain.';
+                        this.cropError = error?.message || 'Logo gagal diproses. Silakan coba gambar lain.';
                     } finally {
                         this.syncing = false;
                     }
