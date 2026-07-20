@@ -282,7 +282,9 @@ class AdminBerandaContentPage extends Component
             $row->header_logo_label = $this->headerLogoLabel;
             $row->header_title_text = $this->headerTitleText;
         }
-        $row->save();
+        // This action is explicitly authorized above and Kaprodi can only
+        // change the logo belonging to their own prodi.
+        $isAdmin ? $row->save() : $row->saveQuietly();
 
         // Keep the public preview on the Kaprodi's own prodi after saving.
         if (! $isAdmin && $user?->prodi_id) {
