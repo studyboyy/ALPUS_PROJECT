@@ -284,6 +284,11 @@ class AdminBerandaContentPage extends Component
         }
         $row->save();
 
+        // Keep the public preview on the Kaprodi's own prodi after saving.
+        if (! $isAdmin && $user?->prodi_id) {
+            session()->put('public_prodi_id', (int) $user->prodi_id);
+        }
+
         $this->headerLogoFile = null;
         $this->croppedHeaderLogoDataUrl = '';
         $this->flashStatus('Header portal berhasil dipublikasikan.');
