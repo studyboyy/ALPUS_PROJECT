@@ -56,11 +56,13 @@ rectangle "Sistem Informasi Laporan Tahunan Prodi" {
     usecase "Mengelola Profil\nProgram Studi" as UCManageProfile
     usecase "Mengelola Umpan Balik" as UCManageFeedback
     usecase "Menerapkan Filter\nSesuai Prodi User" as UCProdiScope
-    usecase "Menambah / Mengubah\nData Prodi Sendiri" as UCWriteOwn
+    usecase "Menambah Data Baru\nProdi Sendiri" as UCWriteOwn
   }
 
   package "Khusus Admin" {
     usecase "Melihat Data\nMulti-Prodi" as UCAllProdi
+    usecase "Memilih Prodi yang\nAkan Dikelola" as UCAdminSelectProdi
+    usecase "Menambah, Mengubah,\n& Menghapus Data" as UCAdminCrud
     usecase "Mengelola Semua Data\nLintas Prodi" as UCManageAll
     usecase "Menghapus Data" as UCDelete
     usecase "Mengelola User\n& Hak Akses" as UCManageUsers
@@ -82,6 +84,7 @@ Guest --> UCPublicGallery
 Guest --> UCFeedback
 Guest --> UCReportPdf
 Guest --> UCDocPdf
+Guest --> UCAllReportPdf
 
 ' Autentikasi
 Kaprodi --> UCLogin
@@ -111,14 +114,14 @@ UCManageFeedback .> UCProdiScope : <<include>>
 
 ' Hak khusus admin
 Admin --> UCAllProdi
+Admin --> UCAdminSelectProdi
+Admin --> UCAdminCrud
 Admin --> UCManageAll
 Admin --> UCDelete
 Admin --> UCManageUsers
 Admin --> UCNewProdi
-Admin --> UCAllReportPdf
 UCManageAll .> UCAllProdi : <<include>>
 UCNewProdi .> UCProvision : <<include>>
-UCAllReportPdf .> UCReportPdf : <<extend>>
 
 note right of UCProdiScope
   Kaprodi/Sekprodi hanya dapat
@@ -128,8 +131,8 @@ note right of UCProdiScope
 end note
 
 note right of UCDelete
-  Hanya Admin yang memiliki
-  hak hapus data.
+  Hanya Admin yang memiliki hak
+  mengubah dan menghapus data lama.
 end note
 
 note bottom of UCLogin

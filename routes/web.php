@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\AdminProdiController;
 use App\Http\Controllers\DocumentCategoryPdfController;
 use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\LaporanAllYearsPdfController;
@@ -51,8 +52,11 @@ Route::redirect('/admin/login', '/login');
 Route::middleware('admin.auth')->group(function (): void {
     Route::get('/admin', AdminDashboardPage::class)->name('admin.dashboard');
     Route::get('/admin/users', AdminUserPage::class)->middleware('role:admin')->name('admin.users');
+    Route::post('/admin/pilih-prodi', [AdminProdiController::class, 'select'])
+        ->middleware('role:admin')
+        ->name('admin.prodi.select');
 
-    Route::middleware('role:kaprodi,sekprodi')->group(function (): void {
+    Route::middleware('role:admin,kaprodi,sekprodi')->group(function (): void {
         Route::get('/admin/dashboard-data', AdminDashboardDataPage::class)->name('admin.dashboard-data');
         Route::get('/admin/bulanan-statistik', AdminMonthlyStatsPage::class)->name('admin.monthly-stats');
         Route::get('/admin/laporan-tahunan', AdminAnnualReportPage::class)->name('admin.annual-report');

@@ -97,6 +97,15 @@ class AdminAuthController extends Controller
         $request->session()->regenerate();
         if ($user->role !== 'admin' && $user->prodi_id) {
             $request->session()->put('public_prodi_id', $user->prodi_id);
+            $request->session()->put('admin_prodi_id', $user->prodi_id);
+        } elseif ($user->role === 'admin') {
+            $selectedProdiId = Prodi::query()
+                ->where('code', '!=', 'ADMIN')
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->value('id');
+            $request->session()->put('admin_prodi_id', $selectedProdiId);
+            $request->session()->put('public_prodi_id', $selectedProdiId);
         }
 
         return redirect()->route('admin.dashboard');

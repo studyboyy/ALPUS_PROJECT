@@ -337,6 +337,10 @@
         $adminUser        = auth()->user();
         $isCentralAdmin   = $adminUser?->role === 'admin';
         $isProdiManager   = in_array($adminUser?->role, ['kaprodi', 'sekprodi'], true);
+        $adminProdis       = $isCentralAdmin
+            ? \App\Models\Prodi::query()->where('code', '!=', 'ADMIN')->where('is_active', true)->orderBy('name')->get()
+            : collect();
+        $selectedAdminProdi = $adminProdis->firstWhere('id', (int) session('admin_prodi_id'));
         $adminPageTitle   = $rolePageTitle;
     @endphp
 
@@ -384,7 +388,7 @@
 
             <div class="adm-nav-group">
                 <p class="adm-nav-label">{{ $isCentralAdmin ? 'Manajemen Sistem' : 'Data Prodi' }}</p>
-                @if ($isProdiManager)
+                @if ($isProdiManager || $isCentralAdmin)
                     <a wire:navigate href="{{ route('admin.dashboard-data') }}"
                         class="adm-link {{ request()->routeIs('admin.dashboard-data') ? 'active' : '' }}">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -411,7 +415,7 @@
                 @endif
             </div>
 
-            @if ($isProdiManager)
+            @if ($isProdiManager || $isCentralAdmin)
             <div class="adm-nav-group">
                 <p class="adm-nav-label">Konten Prodi</p>
                 <a wire:navigate href="{{ route('admin.program-agenda') }}"
@@ -509,6 +513,18 @@
                 <span class="adm-topbar-title">{{ $adminPageTitle }}</span>
             </div>
             <div class="flex items-center gap-2">
+                @if ($isCentralAdmin && $adminProdis->isNotEmpty())
+                    <form method="POST" action="{{ route('admin.prodi.select') }}" class="hidden items-center gap-2 md:flex">
+                        @csrf
+                        <label for="admin-prodi-selector" class="sr-only">Pilih program studi</label>
+                        <select id="admin-prodi-selector" name="prodi_id" onchange="this.form.submit()"
+                            class="h-9 max-w-[220px] rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                            @foreach ($adminProdis as $prodi)
+                                <option value="{{ $prodi->id }}" @selected($selectedAdminProdi?->id === $prodi->id)>{{ $prodi->name }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+                @endif
                 <a wire:navigate href="{{ route('home') }}" target="_blank"
                     class="adm-topbar-action" title="Buka Portal">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -519,7 +535,7 @@
                     <div class="adm-avatar">{{ $adminInitials }}</div>
                     <div class="hidden text-left sm:block">
                         <p class="text-xs font-bold text-zinc-800 leading-tight">{{ $isCentralAdmin ? 'Admin' : 'Kaprodi' }}</p>
-                        <p class="text-[10px] text-zinc-400 leading-tight">{{ $adminProdiName }}</p>
+                        <p class="text-[10px] text-zinc-400 leading-tight">{{ $isCentralAdmin ? ($selectedAdminProdi?->name ?? $adminProdiName) : $adminProdiName }}</p>
                     </div>
                 </div>
             </div>
