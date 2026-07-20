@@ -110,6 +110,28 @@ class AdminUserPage extends Component
         session()->flash('status', 'User berhasil dihapus.');
     }
 
+    public function deleteProdi(int $id): void
+    {
+        $prodi = Prodi::query()->whereKey($id)->where('code', '!=', 'ADMIN')->firstOrFail();
+
+        DB::transaction(function () use ($prodi): void {
+            // Hapus seluruh data turunan agar tidak meninggalkan data yatim.
+            foreach ([
+                'dashboard_monthly_stats', 'dashboard_year_stats', 'dashboard_program_items',
+                'annual_report_sections', 'home_page_settings', 'profile_sections',
+                'document_items', 'contact_feedback', 'users',
+            ] as $table) {
+                DB::table($table)->where('prodi_id', $prodi->id)->delete();
+            }
+            $prodi->delete();
+        });
+
+        if ((int) session('admin_prodi_id') === $prodi->id) {
+            session()->forget(['admin_prodi_id', 'public_prodi_id']);
+        }
+        session()->flash('status', 'Program Studi '.$prodi->name.' dan seluruh data terkait berhasil dihapus.');
+    }
+
     public function createProdiWithKaprodi(ProdiProvisioner $provisioner): void
     {
         $this->newProdiCode = strtoupper(trim($this->newProdiCode));

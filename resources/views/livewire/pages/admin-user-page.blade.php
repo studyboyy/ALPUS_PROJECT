@@ -88,6 +88,19 @@
                 </button>
             </div>
         </form>
+        <div class="border-t border-zinc-100 px-6 py-5">
+            <h3 class="text-sm font-extrabold text-zinc-900">Program Studi Terdaftar</h3>
+            <p class="mt-1 text-xs text-zinc-500">Menghapus prodi juga menghapus akun dan seluruh data prodi tersebut.</p>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                @foreach($prodis as $prodi)
+                    <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+                        <div class="min-w-0"><p class="truncate text-xs font-bold text-zinc-800">{{ $prodi->name }}</p><p class="text-[10px] text-zinc-400">{{ $prodi->code }}</p></div>
+                        <button type="button" wire:click="deleteProdi({{ $prodi->id }})" wire:confirm="Hapus {{ $prodi->name }} beserta seluruh data dan akun terkait? Tindakan ini tidak dapat dibatalkan."
+                            class="shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50">Hapus Prodi</button>
+                    </div>
+                @endforeach
+            </div>
+        </div>
     </section>
 
     <section x-show="tab === 'akun'" x-transition class="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
