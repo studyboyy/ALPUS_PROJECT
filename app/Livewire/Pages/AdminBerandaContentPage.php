@@ -244,6 +244,9 @@ class AdminBerandaContentPage extends Component
 
         if ($this->croppedHeaderLogoDataUrl !== '') {
             $this->headerLogoUrl = $this->storeCroppedHeaderLogo($this->croppedHeaderLogoDataUrl);
+            if ($this->getErrorBag()->has('croppedHeaderLogoDataUrl')) {
+                return;
+            }
         }
 
         $row = $this->getSettingsRow();
@@ -526,8 +529,18 @@ class AdminBerandaContentPage extends Component
             return $this->headerLogoUrl;
         }
 
+        if (strlen($binary) > 4 * 1024 * 1024) {
+            $this->addError('croppedHeaderLogoDataUrl', 'Ukuran logo hasil crop maksimal 4 MB.');
+
+            return $this->headerLogoUrl;
+        }
+
         $path = 'home-content/header/logo-'.Str::uuid().'.'.$extension;
-        Storage::disk('public')->put($path, $binary);
+        if (! Storage::disk('public')->put($path, $binary)) {
+            $this->addError('croppedHeaderLogoDataUrl', 'Logo gagal disimpan ke penyimpanan aplikasi.');
+
+            return $this->headerLogoUrl;
+        }
 
         return asset('storage/'.$path);
     }

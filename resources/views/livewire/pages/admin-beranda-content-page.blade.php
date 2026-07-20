@@ -62,9 +62,10 @@
                     @if(auth()->user()?->isAdmin())
                     <div class="md:col-span-2">
                         <label class="block text-xs font-semibold text-zinc-600 mb-1.5">Upload Logo</label>
-                        <input type="file" accept="image/*" @change="selectFile($event)"
+                        <input type="file" accept="image/png,image/jpeg,image/webp" @change="selectFile($event)"
                             class="w-full rounded-xl border border-dashed border-indigo-300 bg-indigo-50/40 px-3.5 py-2.5 text-sm text-indigo-700" />
-                        <p class="mt-1.5 text-[11px] text-zinc-400">Logo akan dicrop persegi 1:1 sebelum disimpan.</p>
+                        <p class="mt-1.5 text-[11px] text-zinc-400">PNG, JPG, atau WebP maksimal 4 MB. Logo akan dicrop persegi 1:1.</p>
+                        <p x-show="cropError" x-text="cropError" class="mt-1 text-xs font-semibold text-rose-600"></p>
                         @error('croppedHeaderLogoDataUrl')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
                     </div>
                     @endif
@@ -127,8 +128,10 @@
                         <div class="mt-5 flex justify-end gap-2">
                             <button type="button" @click="cancel()"
                                 class="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50">Batal</button>
-                            <button type="button" @click="applyCrop()"
-                                class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700">Pakai Logo</button>
+                            <button type="button" @click="applyCrop()" :disabled="syncing"
+                                class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-60">
+                                <span x-text="syncing ? 'Memproses...' : 'Pakai Logo'"></span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -624,16 +627,33 @@
             lastY: 0,
             naturalWidth: 0,
             naturalHeight: 0,
+            syncing: false,
+            cropError: '',
 
             selectFile(event) {
                 const file = event.target.files && event.target.files[0];
                 if (!file) return;
+
+                this.cropError = '';
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    this.cropError = 'Format logo harus PNG, JPG, atau WebP.';
+                    event.target.value = '';
+                    return;
+                }
+                if (file.size > 4 * 1024 * 1024) {
+                    this.cropError = 'Ukuran logo maksimal 4 MB.';
+                    event.target.value = '';
+                    return;
+                }
 
                 this.sourceUrl = URL.createObjectURL(file);
                 this.zoom = 1;
                 this.minZoom = 1;
                 this.offsetX = 0;
                 this.offsetY = 0;
+                this.naturalWidth = 0;
+                this.naturalHeight = 0;
                 this.open = true;
                 event.target.value = '';
             },
@@ -682,8 +702,12 @@
             },
 
             applyCrop() {
+                if (this.syncing || !this.sourceUrl || !this.naturalWidth || !this.naturalHeight) return;
                 const img = new Image();
-                img.onload = () => {
+                img.onload = async () => {
+                    this.syncing = true;
+                    this.cropError = '';
+                    try {
                     const box = this.boxSize();
                     const scale = this.imageScale();
                     const renderedWidth = this.naturalWidth * scale;
@@ -708,8 +732,16 @@
 
                     const dataUrl = canvas.toDataURL('image/png', 0.92);
                     this.previewLogoUrl = dataUrl;
-                    this.$wire.set('croppedHeaderLogoDataUrl', dataUrl);
+                    await this.$wire.set('croppedHeaderLogoDataUrl', dataUrl);
                     this.cancel();
+                    } catch (error) {
+                        this.cropError = 'Logo gagal diproses. Silakan coba gambar lain.';
+                    } finally {
+                        this.syncing = false;
+                    }
+                };
+                img.onerror = () => {
+                    this.cropError = 'File gambar tidak dapat dibaca oleh browser.';
                 };
                 img.src = this.sourceUrl;
             },
