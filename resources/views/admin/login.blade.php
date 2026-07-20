@@ -52,12 +52,41 @@
             background: linear-gradient(90deg, #0ea5e9, #2563eb);
             box-shadow: 0 14px 28px rgba(37, 99, 235, 0.34);
         }
+
+        .login-field {
+            display: block;
+            color: #334155;
+            font-size: .875rem;
+            font-weight: 700;
+        }
+
+        .login-control {
+            display: block;
+            width: 100%;
+            min-height: 3rem;
+            margin-top: .55rem;
+            border: 1px solid #cbd5e1;
+            border-radius: .9rem;
+            background: #f8fafc;
+            padding: .75rem 1rem;
+            color: #10213a;
+            font-size: .875rem;
+            outline: none;
+            transition: border-color .15s, background .15s, box-shadow .15s;
+        }
+
+        .login-control:hover { border-color: #94a3b8; background: #fff; }
+        .login-control:focus {
+            border-color: #0ea5e9;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(14,165,233,.14);
+        }
     </style>
 </head>
 
 <body class="p-4 md:p-8">
-    <main class="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-6 lg:grid-cols-[1.1fr,0.9fr]">
-        <section class="glass hidden rounded-3xl p-8 text-white lg:block">
+    <main class="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-6xl flex-col items-stretch justify-center gap-6 lg:flex-row lg:items-center">
+        <section class="glass w-full rounded-3xl p-8 text-white lg:flex-1">
             <p
                 class="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
                 Portal Kaprodi Jurusan</p>
@@ -78,7 +107,7 @@
             </div>
         </section>
 
-        <section class="login-card w-full rounded-3xl p-6 md:p-8">
+        <section class="login-card w-full rounded-3xl p-6 md:p-8 lg:flex-1">
             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Portal Access</p>
             <h2 class="display-font mt-3 text-4xl leading-tight text-(--ink)">Masuk ke Panel</h2>
             <p class="mt-2 text-sm text-(--muted)">Pilih Program Studi, lalu masukkan username/email dan password akun Anda.</p>
@@ -89,11 +118,11 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('admin.login.submit') }}" class="mt-6 space-y-4">
+            <form method="POST" action="{{ route('admin.login.submit') }}" class="mt-7 space-y-4">
                 @csrf
-                <label class="block text-sm font-semibold text-slate-700">Program Studi
+                <label class="login-field">Program Studi
                     <select name="prodi_id" required
-                        class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                        class="login-control"
                         >
                         <option value="">-- Pilih Program Studi --</option>
                         @foreach(\App\Models\Prodi::query()->where('is_active', true)->orderByRaw("code = 'ADMIN' desc")->orderBy('name')->get() as $prodi)
@@ -101,19 +130,18 @@
                         @endforeach
                     </select>
                 </label>
-                <label class="block text-sm font-semibold text-slate-700">Username atau Email
+                <label class="login-field">Username atau Email
                     <input name="login" type="text" value="{{ old('login') }}" autocomplete="username"
-                        class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                        class="login-control"
                         placeholder="Contoh: kaprodi.if atau kaprodi.if@prodi.local" required autofocus>
                 </label>
-                <label class="block text-sm font-semibold text-slate-700">Password
+                <label class="login-field">Password
                     <input name="password" type="password" autocomplete="current-password"
-                        class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                        class="login-control"
                         placeholder="Masukkan password" required>
                 </label>
                 <button type="submit"
-                    class="btn-primary w-full rounded-2xl px-4 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5">Masuk
-                    Portal</button>
+                    class="btn-primary w-full rounded-2xl px-4 py-3.5 text-sm font-bold text-white transition hover:-translate-y-0.5">Masuk Portal</button>
             </form>
 
             <p class="mt-5 text-center text-xs text-slate-500">Halaman ini bersifat privat. Aktivitas login tercatat
