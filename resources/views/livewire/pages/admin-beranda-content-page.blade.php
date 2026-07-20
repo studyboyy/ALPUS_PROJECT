@@ -45,6 +45,7 @@
             @if(auth()->user()?->isAdmin() || auth()->user()?->role === 'kaprodi')<div class="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs text-indigo-800"><strong>Alur logo:</strong> pilih file, atur crop lalu klik <em>Pakai Logo</em>, kemudian klik <em>Simpan Header</em> agar tersimpan ke database.</div>@endif
 
             <form wire:submit="simpanHeaderPortal"
+                wire:key="header-logo-form-{{ md5($headerLogoUrl) }}"
                 x-data="headerLogoCropper({ initialLogo: @js($headerLogoUrl) })"
                 class="mt-5 space-y-4">
                 <div class="grid gap-4 md:grid-cols-2">

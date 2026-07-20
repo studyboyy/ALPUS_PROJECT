@@ -123,6 +123,17 @@ test('kaprodi can replace only the header logo', function () {
         ->and($saved->header_logo_label)->toBe($oldLabel)
         ->and($saved->header_title_text)->toBe($oldTitle)
         ->and(HomePageSetting::current($prodi->id)['header_logo_url'])->toBe($saved->header_logo_url);
+
+    $firstLogoUrl = $saved->header_logo_url;
+    $secondDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAQAAABeK7cBAAAADUlEQVR42mP8z8AARAwMAAcBAQDJoy4AAAAASUVORK5CYII=';
+    Livewire::actingAs($kaprodi)
+        ->test(AdminBerandaContentPage::class)
+        ->set('croppedHeaderLogoDataUrl', $secondDataUrl)
+        ->call('simpanHeaderPortal')
+        ->assertHasNoErrors();
+
+    expect(HomePageSetting::withoutGlobalScopes()->where('prodi_id', $prodi->id)->value('header_logo_url'))
+        ->not->toBe($firstLogoUrl);
 });
 
 test('kaprodi cannot update existing statistics or agenda through livewire actions', function () {
