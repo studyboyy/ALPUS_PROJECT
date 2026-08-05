@@ -396,6 +396,8 @@
         .prodi-modal-card {
             position: relative;
             width: min(68rem, 100%);
+            height: min(47rem, calc(100dvh - 2rem));
+            max-height: calc(100dvh - 2rem);
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, .8);
             border-radius: 2rem;
@@ -413,11 +415,16 @@
             pointer-events: none;
             content: '';
         }
-        .prodi-modal-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(24rem, 1.1fr); }
+        .prodi-modal-grid {
+            display: grid;
+            grid-template-columns: minmax(0, .9fr) minmax(24rem, 1.1fr);
+            height: 100%;
+            min-height: 0;
+        }
         .prodi-modal-intro {
             position: relative;
             display: flex;
-            min-height: 36rem;
+            min-height: 0;
             flex-direction: column;
             justify-content: space-between;
             overflow: hidden;
@@ -448,7 +455,35 @@
             box-shadow: 0 0 0 3rem rgba(255,255,255,.035), 0 0 0 6rem rgba(255,255,255,.025);
             content: '';
         }
-        .prodi-modal-content { position: relative; padding: 3rem; }
+        .prodi-modal-content {
+            position: relative;
+            display: flex;
+            min-height: 0;
+            flex-direction: column;
+            padding: 3rem;
+        }
+        .prodi-option-list {
+            min-height: 0;
+            flex: 1 1 auto;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            margin-right: -.55rem;
+            padding: .15rem .55rem .85rem .15rem;
+            scrollbar-color: #93c5fd transparent;
+            scrollbar-width: thin;
+        }
+        .prodi-option-list::-webkit-scrollbar { width: .42rem; }
+        .prodi-option-list::-webkit-scrollbar-track {
+            margin-block: .35rem;
+            border-radius: 999px;
+            background: transparent;
+        }
+        .prodi-option-list::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: linear-gradient(to bottom, #93c5fd, #6366f1);
+        }
+        .prodi-option-list::-webkit-scrollbar-thumb:hover { background: linear-gradient(to bottom, #60a5fa, #4f46e5); }
         .prodi-option {
             position: relative;
             display: flex;
@@ -506,12 +541,20 @@
         }
 
         @media (max-width: 800px) {
-            .prodi-modal-shell { align-items: start; padding: .75rem; }
-            .prodi-modal-card { margin-block: auto; border-radius: 1.5rem; }
-            .prodi-modal-grid { grid-template-columns: 1fr; }
+            .prodi-modal-shell { padding: .75rem; }
+            .prodi-modal-card {
+                height: calc(100dvh - 1.5rem);
+                max-height: calc(100dvh - 1.5rem);
+                border-radius: 1.5rem;
+            }
+            .prodi-modal-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto minmax(0, 1fr);
+            }
             .prodi-modal-intro { min-height: auto; padding: 1.5rem; }
             .prodi-modal-intro__detail { display: none; }
-            .prodi-modal-content { padding: 1.35rem; }
+            .prodi-modal-content { min-height: 0; padding: 1.35rem; }
+            .prodi-option-list { margin-top: 1rem; }
             .prodi-switch-trigger { top: auto; bottom: 1.15rem; transform: none; }
             .prodi-switch-trigger:hover,
             .prodi-switch-trigger:focus-visible { max-width: 3.55rem; }
@@ -644,7 +687,7 @@
                                     Selamat datang di ALPUS
                                 </div>
                                 <h2 id="prodi-dialog-title" class="display-font mt-6 text-3xl font-bold leading-[1.15] text-white lg:text-[2.65rem]">
-                                    Portal data yang sesuai untuk Anda.
+                                    Laporan tahunan program study universitas Al-Ghifari.
                                 </h2>
                                 <p class="mt-4 max-w-md text-sm leading-7 text-blue-100/80">
                                     Pilih program studi untuk menampilkan laporan, statistik, dokumen, dan seluruh informasi yang relevan.
@@ -691,10 +734,11 @@
                                 <p class="mt-2 text-xs leading-5 text-slate-500" x-text="firstVisit ? 'Konten portal akan disesuaikan dengan pilihan Anda.' : 'Pilihan baru akan langsung diterapkan ke seluruh portal.'"></p>
                             </div>
 
-                            <div class="relative mt-6 space-y-3" role="listbox" aria-label="Daftar program studi">
+                            <div x-ref="optionList" class="prodi-option-list relative mt-6 space-y-3" role="listbox" aria-label="Daftar program studi">
                                 <template x-for="(option, index) in options" :key="option.id">
                                     <button type="button"
                                         class="prodi-option"
+                                        :data-prodi-id="option.id"
                                         :class="isActive(option) ? 'border-transparent bg-white' : ''"
                                         :style="optionStyle(option)"
                                         :disabled="saving"
@@ -1042,6 +1086,7 @@
                     this.error = '';
                     this.open = true;
                     this.lockPage(true);
+                    this.scrollToActiveOption();
                 },
 
                 closeSwitcher() {
@@ -1058,6 +1103,21 @@
                     if (!this.isActive(option)) return '';
 
                     return `border-color:${option.accent}; box-shadow:0 12px 30px ${option.glow}; background:linear-gradient(135deg, #fff, ${option.soft});`;
+                },
+
+                scrollToActiveOption() {
+                    this.$nextTick(() => {
+                        const list = this.$refs.optionList;
+                        if (!list) return;
+
+                        if (this.firstVisit) {
+                            list.scrollTop = 0;
+                            return;
+                        }
+
+                        list.querySelector(`[data-prodi-id="${this.selectedId}"]`)
+                            ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    });
                 },
 
                 async choose(option) {
