@@ -13,7 +13,9 @@
                 ->get()
             : collect();
         $authUser = auth()->user();
+        $rememberedPublicProdiId = (int) request()->cookie('alpus_public_prodi_id', 0);
         $candidatePublicProdiId = (int) (session('public_prodi_id')
+            ?: $rememberedPublicProdiId
             ?: (($authUser && $authUser->role !== 'admin') ? $authUser->prodi_id : null)
             ?: $publicProdis->first()?->id);
         $selectedPublicProdiId = $publicProdis->contains('id', $candidatePublicProdiId)
@@ -24,11 +26,25 @@
             session(['public_prodi_id' => $selectedPublicProdi->id]);
         }
         $homeContent = \App\Models\HomePageSetting::current();
-        $publicProdiOptions = $publicProdis->map(fn ($prodi) => [
-            'id' => (int) $prodi->id,
-            'code' => $prodi->code,
-            'name' => $prodi->name,
-        ])->values();
+        $publicProdiOptions = $publicProdis->map(function ($prodi) {
+            $visual = match (strtoupper((string) $prodi->code)) {
+                'SI' => ['logo' => 'prodi-si.svg', 'accent' => '#2563eb', 'soft' => '#eff6ff', 'glow' => 'rgba(37, 99, 235, .28)'],
+                'IF' => ['logo' => 'prodi-if.svg', 'accent' => '#7c3aed', 'soft' => '#f5f3ff', 'glow' => 'rgba(124, 58, 237, .25)'],
+                'MJ' => ['logo' => 'prodi-mj.svg', 'accent' => '#0f766e', 'soft' => '#f0fdfa', 'glow' => 'rgba(15, 118, 110, .24)'],
+                'EKONOMI' => ['logo' => 'prodi-ekonomi.svg', 'accent' => '#d97706', 'soft' => '#fffbeb', 'glow' => 'rgba(217, 119, 6, .24)'],
+                default => ['logo' => 'prodi-default.svg', 'accent' => '#2563eb', 'soft' => '#eff6ff', 'glow' => 'rgba(37, 99, 235, .25)'],
+            };
+
+            return [
+                'id' => (int) $prodi->id,
+                'code' => $prodi->code,
+                'name' => $prodi->name,
+                'logo' => asset('logos/'.$visual['logo']),
+                'accent' => $visual['accent'],
+                'soft' => $visual['soft'],
+                'glow' => $visual['glow'],
+            ];
+        })->values();
         $routeName = request()->route()?->getName();
         $resolvedProgramName = trim((string) ($selectedPublicProdi?->name ?: ($homeContent['header_logo_label'] ?? 'Program Studi')));
         $resolvedHeaderTitle = str_replace(
@@ -62,6 +78,7 @@
 
     <title>{{ $metaTitle }}</title>
     <meta name="description" content="{{ $metaDescription }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ $metaUrl }}">
 
@@ -277,6 +294,236 @@
         }
         #lw-progress.is-loading { opacity: 1; width: 78%; }
         #lw-progress.is-done    { opacity: 1; width: 100%; }
+
+        [x-cloak] { display: none !important; }
+
+        /* Prodi onboarding & floating switcher */
+        .prodi-switch-trigger {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            z-index: 80;
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            min-height: 3.5rem;
+            max-width: 3.55rem;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, .78);
+            border-left: 0;
+            border-radius: 0 1.1rem 1.1rem 0;
+            background: rgba(255, 255, 255, .88);
+            padding: .55rem .72rem .55rem .5rem;
+            color: #1e3a8a;
+            box-shadow: 0 16px 42px rgba(15, 23, 42, .16), inset 0 1px 0 rgba(255, 255, 255, .9);
+            backdrop-filter: blur(18px);
+            transform: translateY(-50%);
+            transition: max-width .45s cubic-bezier(.22, 1, .36, 1), box-shadow .3s ease, background .3s ease;
+        }
+        .prodi-switch-trigger:hover,
+        .prodi-switch-trigger:focus-visible {
+            max-width: 17rem;
+            background: rgba(255, 255, 255, .97);
+            box-shadow: 0 20px 52px rgba(37, 99, 235, .2), inset 0 1px 0 #fff;
+            outline: none;
+        }
+        .prodi-switch-trigger__icon {
+            position: relative;
+            display: grid;
+            width: 2.5rem;
+            height: 2.5rem;
+            flex: 0 0 2.5rem;
+            place-items: center;
+            overflow: hidden;
+            border-radius: .85rem;
+            background: linear-gradient(145deg, #2563eb, #4f46e5);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, .32);
+        }
+        .prodi-switch-trigger__icon::after {
+            position: absolute;
+            inset: -50%;
+            background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.5) 50%, transparent 62%);
+            animation: switcher-shine 3.8s ease-in-out infinite;
+            content: '';
+        }
+        .prodi-switch-trigger__label {
+            min-width: 11.5rem;
+            text-align: left;
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: opacity .25s ease .08s, transform .3s ease .08s;
+        }
+        .prodi-switch-trigger:hover .prodi-switch-trigger__label,
+        .prodi-switch-trigger:focus-visible .prodi-switch-trigger__label {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .prodi-modal-shell {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: grid;
+            place-items: center;
+            overflow: auto;
+            padding: 1rem;
+            background:
+                radial-gradient(circle at 12% 18%, rgba(96, 165, 250, .26), transparent 26rem),
+                radial-gradient(circle at 88% 80%, rgba(129, 140, 248, .24), transparent 28rem),
+                rgba(5, 12, 30, .78);
+            backdrop-filter: blur(20px) saturate(120%);
+        }
+        .prodi-modal-noise {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .prodi-modal-orb {
+            position: absolute;
+            border: 1px solid rgba(255,255,255,.22);
+            border-radius: 999px;
+            background: rgba(255,255,255,.07);
+            box-shadow: inset 0 0 30px rgba(255,255,255,.08);
+            backdrop-filter: blur(4px);
+            animation: prodi-orb-float 8s ease-in-out infinite;
+        }
+        .prodi-modal-orb:nth-child(1) { width: 5.5rem; height: 5.5rem; left: 7%; top: 12%; }
+        .prodi-modal-orb:nth-child(2) { width: 2.25rem; height: 2.25rem; right: 14%; top: 9%; animation-delay: -2.5s; }
+        .prodi-modal-orb:nth-child(3) { width: 8rem; height: 8rem; right: 4%; bottom: 5%; animation-delay: -5s; }
+        .prodi-modal-orb:nth-child(4) { width: 1.4rem; height: 1.4rem; left: 18%; bottom: 12%; animation-delay: -1s; }
+
+        .prodi-modal-card {
+            position: relative;
+            width: min(68rem, 100%);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, .8);
+            border-radius: 2rem;
+            background: rgba(255, 255, 255, .96);
+            box-shadow: 0 50px 120px rgba(2, 6, 23, .42), 0 0 0 1px rgba(255,255,255,.35);
+        }
+        .prodi-modal-card::before {
+            position: absolute;
+            top: -8rem;
+            right: -7rem;
+            width: 24rem;
+            height: 24rem;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(191, 219, 254, .8), rgba(224, 231, 255, .28) 55%, transparent 72%);
+            pointer-events: none;
+            content: '';
+        }
+        .prodi-modal-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(24rem, 1.1fr); }
+        .prodi-modal-intro {
+            position: relative;
+            display: flex;
+            min-height: 36rem;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            padding: 3rem;
+            color: #fff;
+            background:
+                linear-gradient(145deg, rgba(15, 42, 92, .97), rgba(30, 64, 175, .94)),
+                #172554;
+        }
+        .prodi-modal-intro::before {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom right, #000, transparent 80%);
+            content: '';
+        }
+        .prodi-modal-intro::after {
+            position: absolute;
+            width: 21rem;
+            height: 21rem;
+            right: -9rem;
+            bottom: -8rem;
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 999px;
+            box-shadow: 0 0 0 3rem rgba(255,255,255,.035), 0 0 0 6rem rgba(255,255,255,.025);
+            content: '';
+        }
+        .prodi-modal-content { position: relative; padding: 3rem; }
+        .prodi-option {
+            position: relative;
+            display: flex;
+            width: 100%;
+            align-items: center;
+            gap: .9rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 1.1rem;
+            background: rgba(255,255,255,.78);
+            padding: .85rem;
+            text-align: left;
+            transition: transform .28s cubic-bezier(.22, 1, .36, 1), border-color .25s ease, box-shadow .25s ease, background .25s ease;
+        }
+        .prodi-option:hover:not(:disabled) { transform: translateY(-3px) scale(1.008); }
+        .prodi-option:focus-visible { outline: 3px solid rgba(59, 130, 246, .22); outline-offset: 2px; }
+        .prodi-option:disabled { cursor: wait; opacity: .66; }
+        .prodi-option__logo {
+            display: grid;
+            width: 3.25rem;
+            height: 3.25rem;
+            flex: 0 0 3.25rem;
+            place-items: center;
+            border-radius: 1rem;
+        }
+        .prodi-option__logo img { width: 2.1rem; height: 2.1rem; object-fit: contain; }
+        .prodi-option__arrow {
+            display: grid;
+            width: 2rem;
+            height: 2rem;
+            flex: 0 0 2rem;
+            place-items: center;
+            border-radius: 999px;
+            color: #94a3b8;
+            background: #f8fafc;
+            transition: color .2s ease, background .2s ease, transform .2s ease;
+        }
+        .prodi-option:hover .prodi-option__arrow { color: #fff; background: #2563eb; transform: translateX(2px); }
+
+        .prodi-loader {
+            width: 1.1rem;
+            height: 1.1rem;
+            border: 2px solid rgba(255,255,255,.4);
+            border-top-color: #fff;
+            border-radius: 999px;
+            animation: prodi-spin .75s linear infinite;
+        }
+        @keyframes prodi-spin { to { transform: rotate(360deg); } }
+        @keyframes switcher-shine {
+            0%, 55% { transform: translateX(-75%) rotate(15deg); }
+            78%, 100% { transform: translateX(75%) rotate(15deg); }
+        }
+        @keyframes prodi-orb-float {
+            0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+            50% { transform: translate3d(12px, -20px, 0) rotate(10deg); }
+        }
+
+        @media (max-width: 800px) {
+            .prodi-modal-shell { align-items: start; padding: .75rem; }
+            .prodi-modal-card { margin-block: auto; border-radius: 1.5rem; }
+            .prodi-modal-grid { grid-template-columns: 1fr; }
+            .prodi-modal-intro { min-height: auto; padding: 1.5rem; }
+            .prodi-modal-intro__detail { display: none; }
+            .prodi-modal-content { padding: 1.35rem; }
+            .prodi-switch-trigger { top: auto; bottom: 1.15rem; transform: none; }
+            .prodi-switch-trigger:hover,
+            .prodi-switch-trigger:focus-visible { max-width: 3.55rem; }
+            .prodi-switch-trigger__label { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .prodi-modal-orb,
+            .prodi-switch-trigger__icon::after,
+            .prodi-loader { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+            .prodi-option,
+            .prodi-switch-trigger { transition-duration: .01ms !important; }
+        }
     </style>
 </head>
 
@@ -290,7 +537,7 @@
     <div id="lw-progress" aria-hidden="true"></div>
 
     <header class="sticky top-0 z-50 border-b border-(--line)/80 bg-white/80 backdrop-blur-md">
-        <div class="mx-auto grid max-w-[92rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 md:px-6 xl:grid-cols-[minmax(280px,1fr)_auto_auto] xl:gap-5 xl:px-8">
+        <div class="mx-auto grid max-w-[92rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 md:px-6 xl:gap-5 xl:px-8">
             <a wire:navigate href="{{ route('home') }}" class="flex min-w-0 items-center gap-3">
                 @if (!empty($homeContent['header_logo_url']))
                     <img src="{{ $homeContent['header_logo_url'] }}" alt="Logo Program Studi"
@@ -324,53 +571,176 @@
                     class="nav-link {{ request()->routeIs('kontak*') ? 'active' : '' }}">Kontak</a>
             </nav>
 
-            @if ($publicProdis->isNotEmpty())
-                <div class="relative hidden shrink-0 xl:block"
-                    x-data="publicProdiDropdown({
-                        action: @js(route('public.prodi.select')),
-                        selectedId: @js($selectedPublicProdiId),
-                        selectedLabel: @js($selectedPublicProdi?->name ?: 'Program Studi'),
-                        options: @js($publicProdiOptions),
-                    })"
-                    x-cloak>
-                    <button type="button"
-                        @click="toggle()"
-                        class="flex w-[16.5rem] items-center justify-between gap-3 rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-left text-xs font-bold text-blue-800 shadow-sm transition hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        :aria-expanded="open.toString()"
-                        aria-haspopup="listbox">
-                        <span class="min-w-0 truncate" x-text="selectedLabel"></span>
-                        <svg class="h-4 w-4 shrink-0 transition-transform duration-150" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/>
-                        </svg>
-                    </button>
-
-                    <div x-show="open" x-transition.origin.top.right
-                        class="absolute right-0 z-50 mt-2 w-[16rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5"
-                        role="listbox"
-                        @click.outside="close()"
-                        @keydown.escape.window="close()">
-                        <div class="max-h-72 overflow-auto p-1">
-                            <template x-for="option in options" :key="option.id">
-                                <button type="button"
-                                    @click="choose(option)"
-                                    class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition"
-                                    :class="option.id === selectedId ? 'bg-blue-50 text-blue-800' : 'text-slate-700 hover:bg-slate-50'">
-                                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-                                        :class="option.id === selectedId ? 'bg-blue-600' : 'bg-slate-100'">
-                                        <span class="h-2.5 w-2.5 rounded-full"
-                                            :class="option.id === selectedId ? 'bg-white' : 'bg-slate-400'"></span>
-                                    </span>
-                                    <span class="min-w-0">
-                                        <span class="block truncate text-sm font-semibold leading-tight" x-text="option.name"></span>
-                                    </span>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-            @endif
         </div>
     </header>
+
+    @if ($publicProdis->isNotEmpty())
+        <div id="public-prodi-switcher"
+            x-data="publicProdiSwitcher({
+                action: @js(route('public.prodi.select')),
+                selectedId: @js($selectedPublicProdiId),
+                hasRememberedSelection: @js($rememberedPublicProdiId > 0 && $publicProdis->contains('id', $rememberedPublicProdiId)),
+                options: @js($publicProdiOptions),
+            })"
+            x-init="boot()"
+            @keydown.escape.window="closeSwitcher()"
+            x-cloak>
+
+            {{-- Floating control: replaces the selector previously placed in the header. --}}
+            <button type="button"
+                x-show="ready && !open"
+                x-transition:enter="transition duration-500 ease-out"
+                x-transition:enter-start="opacity-0 -translate-x-8"
+                x-transition:enter-end="opacity-100 translate-x-0"
+                class="prodi-switch-trigger"
+                @click="openSwitcher()"
+                aria-label="Ganti program studi">
+                <span class="prodi-switch-trigger__icon" aria-hidden="true">
+                    <svg class="relative z-10 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3"/>
+                    </svg>
+                </span>
+                <span class="prodi-switch-trigger__label">
+                    <span class="block text-[10px] font-extrabold uppercase tracking-[.16em] text-blue-500">Ganti program studi</span>
+                    <span class="mt-0.5 block truncate text-sm font-bold text-slate-800" x-text="activeOption?.name || 'Pilih prodi'"></span>
+                </span>
+            </button>
+
+            {{-- First-visit onboarding and reusable program switcher. --}}
+            <div x-show="open"
+                x-transition:enter="transition duration-500 ease-out"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition duration-250 ease-in"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                class="prodi-modal-shell"
+                @click.self="closeSwitcher()">
+
+                <div class="prodi-modal-noise" aria-hidden="true">
+                    <span class="prodi-modal-orb"></span>
+                    <span class="prodi-modal-orb"></span>
+                    <span class="prodi-modal-orb"></span>
+                    <span class="prodi-modal-orb"></span>
+                </div>
+
+                <section x-show="open"
+                    x-transition:enter="transition duration-500 delay-75 ease-out"
+                    x-transition:enter-start="opacity-0 translate-y-8 scale-[.96]"
+                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                    x-transition:leave="transition duration-200 ease-in"
+                    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                    x-transition:leave-end="opacity-0 translate-y-5 scale-[.98]"
+                    class="prodi-modal-card"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="prodi-dialog-title">
+
+                    <div class="prodi-modal-grid">
+                        <div class="prodi-modal-intro">
+                            <div class="relative z-10">
+                                <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.18em] text-blue-100 backdrop-blur-md">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-sky-300 shadow-[0_0_12px_rgba(125,211,252,.9)]"></span>
+                                    Selamat datang di ALPUS
+                                </div>
+                                <h2 id="prodi-dialog-title" class="display-font mt-6 text-3xl font-bold leading-[1.15] text-white lg:text-[2.65rem]">
+                                    Portal data yang sesuai untuk Anda.
+                                </h2>
+                                <p class="mt-4 max-w-md text-sm leading-7 text-blue-100/80">
+                                    Pilih program studi untuk menampilkan laporan, statistik, dokumen, dan seluruh informasi yang relevan.
+                                </p>
+                            </div>
+
+                            <div class="prodi-modal-intro__detail relative z-10">
+                                <div class="mb-5 flex -space-x-2">
+                                    <template x-for="option in options.slice(0, 4)" :key="`intro-${option.id}`">
+                                        <span class="grid h-10 w-10 place-items-center rounded-full border-2 border-blue-800 bg-white shadow-lg">
+                                            <img :src="option.logo" alt="" class="h-6 w-6 object-contain">
+                                        </span>
+                                    </template>
+                                    <span class="grid h-10 w-10 place-items-center rounded-full border-2 border-blue-800 bg-blue-500 text-xs font-extrabold text-white">+</span>
+                                </div>
+                                <div class="flex items-start gap-3 border-t border-white/15 pt-5">
+                                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/10 text-blue-100">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                        </svg>
+                                    </span>
+                                    <div>
+                                        <p class="text-xs font-bold text-white">Pilihan tersimpan di browser ini</p>
+                                        <p class="mt-1 text-[11px] leading-5 text-blue-100/65">Anda tidak perlu memilih ulang setiap membuka halaman atau melakukan refresh.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="prodi-modal-content">
+                            <button type="button"
+                                x-show="!firstVisit && !saving"
+                                @click="closeSwitcher()"
+                                class="absolute right-5 top-5 z-10 grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white/80 text-slate-400 shadow-sm backdrop-blur transition hover:rotate-90 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                                aria-label="Tutup pilihan program studi">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+
+                            <div class="relative">
+                                <p class="text-[10px] font-extrabold uppercase tracking-[.2em] text-blue-600" x-text="firstVisit ? 'Satu langkah untuk memulai' : 'Ubah ruang data'"></p>
+                                <h3 class="mt-2 pr-8 text-2xl font-extrabold tracking-tight text-slate-900" x-text="firstVisit ? 'Pilih program studi' : 'Ganti program studi'"></h3>
+                                <p class="mt-2 text-xs leading-5 text-slate-500" x-text="firstVisit ? 'Konten portal akan disesuaikan dengan pilihan Anda.' : 'Pilihan baru akan langsung diterapkan ke seluruh portal.'"></p>
+                            </div>
+
+                            <div class="relative mt-6 space-y-3" role="listbox" aria-label="Daftar program studi">
+                                <template x-for="(option, index) in options" :key="option.id">
+                                    <button type="button"
+                                        class="prodi-option"
+                                        :class="isActive(option) ? 'border-transparent bg-white' : ''"
+                                        :style="optionStyle(option)"
+                                        :disabled="saving"
+                                        :aria-selected="isActive(option).toString()"
+                                        @click="choose(option)">
+                                        <span class="prodi-option__logo" :style="`background:${option.soft}`">
+                                            <img :src="option.logo" :alt="`Logo ${option.name}`">
+                                        </span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="flex flex-wrap items-center gap-2">
+                                                <span class="truncate text-sm font-extrabold text-slate-800" x-text="option.name"></span>
+                                                <span x-show="isActive(option)" class="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-emerald-600">Aktif</span>
+                                            </span>
+                                            <span class="mt-1 block text-[10px] font-bold uppercase tracking-[.15em] text-slate-400" x-text="`Program Studi · ${option.code}`"></span>
+                                        </span>
+                                        <span class="prodi-option__arrow" aria-hidden="true">
+                                            <span x-show="savingOptionId !== option.id">
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/>
+                                                </svg>
+                                            </span>
+                                            <span x-show="savingOptionId === option.id" class="prodi-loader"></span>
+                                        </span>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <div x-show="error" x-transition class="mt-4 flex items-start gap-2 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700">
+                                <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.007v.008H12v-.008z"/>
+                                </svg>
+                                <span x-text="error"></span>
+                            </div>
+
+                            <div class="mt-6 flex items-center gap-2 text-[10px] font-semibold leading-4 text-slate-400">
+                                <svg class="h-4 w-4 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 12.75 2.25 2.25L15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Pilihan dapat diubah kapan saja melalui tombol mengambang di sisi kiri.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    @endif
 
     <main id="page-content" class="relative z-10 mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
         @if (isset($slot))
@@ -591,33 +961,134 @@
                 mobileMenuBtn && mobileMenuBtn.setAttribute('aria-expanded', 'false');
             }
 
-            window.publicProdiDropdown = (config) => ({
+            window.publicProdiSwitcher = (config) => ({
                 open: false,
+                ready: false,
+                firstVisit: false,
+                saving: false,
+                savingOptionId: null,
+                error: '',
                 action: config.action,
                 selectedId: Number(config.selectedId || 0),
-                selectedLabel: config.selectedLabel || '',
-                options: config.options || [],
+                hasRememberedSelection: Boolean(config.hasRememberedSelection),
+                options: (config.options || []).map(option => ({ ...option, id: Number(option.id || 0) })),
+                storageKey: 'alpus.public_prodi_id',
 
-                toggle() {
-                    this.open = !this.open;
+                get activeOption() {
+                    return this.options.find(option => option.id === this.selectedId) || this.options[0] || null;
                 },
 
-                close() {
+                async boot() {
+                    const storedId = this.readStoredId();
+                    const storedOption = this.options.find(option => option.id === storedId);
+
+                    if (this.hasRememberedSelection) {
+                        this.rememberLocally(this.selectedId);
+                    } else if (storedOption) {
+                        this.ready = true;
+                        this.saving = true;
+
+                        try {
+                            await this.sendSelection(storedOption.id);
+                            window.location.reload();
+                            return;
+                        } catch (error) {
+                            this.forgetLocalSelection();
+                            this.error = 'Pilihan tersimpan belum dapat disinkronkan. Silakan pilih kembali.';
+                            this.saving = false;
+                        }
+                    } else {
+                        this.forgetLocalSelection();
+                    }
+
+                    if (!this.hasRememberedSelection) {
+                        this.firstVisit = true;
+                        this.open = true;
+                        this.lockPage(true);
+                    }
+
+                    this.ready = true;
+                },
+
+                readStoredId() {
+                    try {
+                        return Number(window.localStorage.getItem(this.storageKey) || 0);
+                    } catch (error) {
+                        return 0;
+                    }
+                },
+
+                rememberLocally(prodiId) {
+                    try {
+                        window.localStorage.setItem(this.storageKey, String(prodiId));
+                    } catch (error) {
+                        // Cookie persistence remains available when storage is blocked.
+                    }
+                },
+
+                forgetLocalSelection() {
+                    try {
+                        window.localStorage.removeItem(this.storageKey);
+                    } catch (error) {
+                        // Ignore privacy-mode storage errors.
+                    }
+                },
+
+                lockPage(locked) {
+                    document.body.style.overflow = locked ? 'hidden' : '';
+                },
+
+                openSwitcher() {
+                    this.error = '';
+                    this.open = true;
+                    this.lockPage(true);
+                },
+
+                closeSwitcher() {
+                    if (this.firstVisit || this.saving) return;
                     this.open = false;
+                    this.lockPage(false);
+                },
+
+                isActive(option) {
+                    return !this.firstVisit && Number(option?.id || 0) === this.selectedId;
+                },
+
+                optionStyle(option) {
+                    if (!this.isActive(option)) return '';
+
+                    return `border-color:${option.accent}; box-shadow:0 12px 30px ${option.glow}; background:linear-gradient(135deg, #fff, ${option.soft});`;
                 },
 
                 async choose(option) {
-                    if (!option) return;
-                    this.selectedId = Number(option.id || 0);
-                    this.selectedLabel = option.name || '';
-                    this.close();
-                    await this.save(option.id);
+                    if (!option || this.saving) return;
+
+                    if (!this.firstVisit && option.id === this.selectedId) {
+                        this.closeSwitcher();
+                        return;
+                    }
+
+                    this.error = '';
+                    this.saving = true;
+                    this.savingOptionId = option.id;
+
+                    try {
+                        await this.sendSelection(option.id);
+                        this.selectedId = option.id;
+                        this.rememberLocally(option.id);
+                        this.firstVisit = false;
+                        window.location.reload();
+                    } catch (error) {
+                        this.error = 'Pilihan belum berhasil disimpan. Periksa koneksi lalu coba kembali.';
+                        this.saving = false;
+                        this.savingOptionId = null;
+                    }
                 },
 
-                async save(prodiId) {
+                async sendSelection(prodiId) {
                     const token = document.querySelector('meta[name="csrf-token"]')?.content || window.livewireScriptConfig?.csrf;
 
-                    await fetch(this.action, {
+                    const response = await fetch(this.action, {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
@@ -629,12 +1100,9 @@
                         body: new URLSearchParams({ prodi_id: String(prodiId) }).toString(),
                     });
 
-                    if (window.Livewire && typeof window.Livewire.navigate === 'function') {
-                        window.Livewire.navigate(window.location.pathname + window.location.search);
-                        return;
+                    if (!response.ok) {
+                        throw new Error(`Prodi selection failed with status ${response.status}`);
                     }
-
-                    window.location.reload();
                 },
             });
 

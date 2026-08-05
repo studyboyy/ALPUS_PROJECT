@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 
 class PublicProdiController extends Controller
 {
+    private const REMEMBERED_PRODI_COOKIE = 'alpus_public_prodi_id';
+
     public function select(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
@@ -23,15 +25,27 @@ class PublicProdiController extends Controller
 
         $request->session()->put('public_prodi_id', $prodi->id);
 
+        $rememberedProdiCookie = cookie(
+            self::REMEMBERED_PRODI_COOKIE,
+            (string) $prodi->id,
+            60 * 24 * 400,
+            '/',
+            null,
+            $request->isSecure(),
+            true,
+            false,
+            'lax',
+        );
+
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'ok' => true,
                 'prodi_id' => $prodi->id,
                 'prodi_name' => $prodi->name,
                 'prodi_code' => $prodi->code,
-            ]);
+            ])->withCookie($rememberedProdiCookie);
         }
 
-        return back();
+        return back()->withCookie($rememberedProdiCookie);
     }
 }

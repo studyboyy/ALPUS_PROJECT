@@ -11,6 +11,7 @@ test('guest can select an active public prodi', function () {
 
     $this->post(route('public.prodi.select'), ['prodi_id' => $prodi->id])
         ->assertRedirect()
+        ->assertCookie('alpus_public_prodi_id', (string) $prodi->id)
         ->assertSessionHas('public_prodi_id', $prodi->id);
 });
 
